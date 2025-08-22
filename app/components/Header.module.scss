@@ -1,0 +1,358 @@
+:root {
+  --kabum-blue: #1e3a8a;
+  --kabum-dark-blue: #1e40af;
+  --kabum-orange: #f97316;
+  --kabum-light-blue: #3b82f6;
+  --white: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.header {
+  background: var(--kabum-blue);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Top Header */
+.topHeader {
+  background: var(--kabum-blue);
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.topHeaderContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 2rem;
+  align-items: center;
+}
+
+.logoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.logo {
+  text-decoration: none;
+  color: var(--white);
+}
+
+.logoText {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--kabum-light-blue);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  display: block;
+}
+
+.logoUrl {
+  font-size: 0.75rem;
+  color: var(--white);
+  opacity: 0.8;
+}
+
+.locationSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--white);
+  font-size: 0.875rem;
+}
+
+.locationIcon {
+  font-size: 1rem;
+}
+
+.locationText {
+  white-space: nowrap;
+}
+
+.cepInput {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--white);
+  color: var(--white);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  width: 80px;
+  text-align: center;
+}
+
+.cepInput::placeholder {
+  color: var(--white);
+  opacity: 0.7;
+}
+
+.cepInput:focus {
+  outline: none;
+  border-bottom-color: var(--kabum-orange);
+}
+
+.searchSection {
+  flex: 1;
+  max-width: 600px;
+}
+
+.searchForm {
+  display: flex;
+  width: 100%;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 4px 0 0 4px;
+  font-size: 1rem;
+  background: var(--white);
+}
+
+.searchInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.searchButton {
+  background: var(--kabum-orange);
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.searchButton:hover {
+  background: #ea580c;
+}
+
+.searchArrow {
+  color: var(--white);
+  font-size: 1.125rem;
+  font-weight: bold;
+}
+
+.userSection {
+  display: flex;
+  align-items: center;
+}
+
+.loadingUser {
+  display: flex;
+  align-items: center;
+}
+
+.loadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid var(--white);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userName {
+  color: var(--white);
+  font-weight: 500;
+}
+
+.logoutButton {
+  background: var(--kabum-orange);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.logoutButton:hover {
+  background: #ea580c;
+}
+
+.loginButton {
+  background: var(--kabum-orange);
+  color: var(--white);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background 150ms ease;
+}
+
+.loginButton:hover {
+  background: #ea580c;
+}
+
+/* Navigation Bar */
+.navigationBar {
+  background: var(--kabum-blue);
+  padding: 0.75rem 0;
+}
+
+.navContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.navButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--white);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.navButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.chevron {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Promotional Banner */
+.promoBanner {
+  margin-left: auto;
+  background: var(--kabum-dark-blue);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.promoContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.promoLogo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.promoIcon {
+  font-size: 1.5rem;
+}
+
+.promoText {
+  color: var(--white);
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+.promoMessage {
+  color: var(--white);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.promoHighlight {
+  color: var(--kabum-orange);
+  font-weight: 600;
+}
+
+.promoButton {
+  background: var(--kabum-orange);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.promoButton:hover {
+  background: #ea580c;
+}
+
+.promoIconSmall {
+  position: absolute;
+  bottom: -0.5rem;
+  right: -0.5rem;
+  font-size: 1rem;
+  color: var(--kabum-orange);
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .topHeaderContent {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .searchSection {
+    max-width: none;
+  }
+  
+  .navContent {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .promoBanner {
+    margin-left: 0;
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .topHeaderContent,
+  .navContent {
+    padding: 0 1rem;
+  }
+  
+  .locationSection {
+    justify-content: center;
+  }
+  
+  .userSection {
+    justify-content: center;
+  }
+  
+  .navButton {
+    text-align: center;
+    justify-content: center;
+  }
+} 

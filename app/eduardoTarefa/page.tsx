@@ -3,7 +3,10 @@ import { redirect } from 'next/navigation';
 import React from 'react';
 import { authOptions } from '../api/auth/[...nextauth]/route';
 import LogoutButton from '../components/LogoutButton';
-import styles from '../../styles/checkout.module.scss';
+
+//import { prisma } from '../lib/prisma';
+
+import styles from './dashboard.module.scss';
 
 function getInitials(nameOrEmail?: string | null) {
     if (!nameOrEmail) return 'U';
@@ -23,54 +26,103 @@ export default async function DashboardPage() {
 
     const name = session.user?.name ?? null;
     const email = session.user?.email ?? null;
-    const userId = (session.user as { id?: string | number } | undefined)?.id ?? null;
-    const role = (session.user as { role?: string } | undefined)?.role ?? null;
+    const userId = (session.user as { id?: string | number } | undefined)?.id;
+    const displayName = name ?? email?.split('@')[0] ?? 'Usuário';
 
-    const displayName = name ?? email ?? 'usuário';
+    // Verificar se userId existe antes de fazer queries
+   
 
+    // if (userId && !isNaN(Number(userId))) {
+    //     const userIdNumber = Number(userId);
+        
+       
+        
+
+        
+    // }
+
+    // Dados padrão caso não existam no banco
+    const defaultFinancialData = {
+        saldoTotal: 0,
+        receitas: 0,
+        despesas: 0,
+        investimentos: 0,
+        metaMensal: 0,
+        progressoMeta: 0,
+    };
+
+    
     return (
-        <main className={styles.container}>
-            <section className={styles.card}>
-                <header className={styles.header}>
-                    <h1 className={styles.title}>Bem-vindo ao seu painel</h1>
-                    <p className={styles.subtitle}>
-                        Olá, <strong>{displayName}</strong>! Você entrou com sucesso.
-                    </p>
-                </header>
-
-                <div className={styles.profileRow}>
-                    <div className={styles.avatar} aria-hidden>
-                        {getInitials(name ?? email)}
+        <div className={styles.dashboard}>
+            {/* Header */}
+            <header className={styles.header}>
+                <div className={styles.headerContent}>
+                    <div className={styles.welcome}>
+                        <div className={styles.welcomeHeader}>
+                            <div className={styles.storeLogo}>
+                                <span className={styles.storeIcon}>🛒</span>
+                                <span className={styles.storeName}>ShopMaster</span>
+                            </div>
+                            <h1>Olá, {displayName}!</h1>
+                        </div>
+                        <p>Aqui está um resumo das suas vendas</p>
                     </div>
-                    <div className={styles.profileMeta}>
-                        <div className={styles.profileName}>{name ?? 'Sem nome'}</div>
-                        {email && <div className={styles.profileEmail}>{email}</div>}
+                    <div className={styles.headerActions}>
+                        <div className={styles.profile}>
+                            <div className={styles.avatar}>
+                                {getInitials(name ?? email)}
+                            </div>
+                            <span>{displayName}</span>
+                        </div>
+                        <LogoutButton className={styles.logoutBtn} />
                     </div>
                 </div>
+            </header>
 
-                <dl className={styles.dataGrid}>
-                    <div className={styles.dataItem}>
-                        <dt>Nome</dt>
-                        <dd>{name ?? '—'}</dd>
+            {/* Dashboard Content */}
+            <main className={styles.content}>
+                {/* Cards de Resumo */}
+                <section className={styles.summaryCards}>
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <h3>Vendas Totais</h3>
+                            <span className={styles.iconBalance}>💰</span>
+                        </div>
+                        
+                        <div className={styles.cardChange}>+12.5% este mês</div>
                     </div>
-                    <div className={styles.dataItem}>
-                        <dt>E-mail</dt>
-                        <dd>{email ?? '—'}</dd>
-                    </div>
-                    <div className={styles.dataItem}>
-                        <dt>ID do usuário</dt>
-                        <dd>{userId ?? '—'}</dd>
-                    </div>
-                    <div className={styles.dataItem}>
-                        <dt>Papel</dt>
-                        <dd>{role ?? '—'}</dd>
-                    </div>
-                </dl>
 
-                <div className={styles.actions}>
-                    <LogoutButton className={styles.logoutBtn} />
-                </div>
-            </section>
-        </main>
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <h3>Faturamento</h3>
+                            <span className={styles.iconIncome}>📈</span>
+                        </div>
+                        
+                        <div className={styles.cardChange}>+8.2% este mês</div>
+                    </div>
+
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <h3>Custos</h3>
+                            <span className={styles.iconExpense}>📉</span>
+                        </div>
+                        
+                        <div className={`${styles.cardChange} ${styles.negative}`}>-3.1% este mês</div>
+                    </div>
+
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <h3>Produtos</h3>
+                            <span className={styles.iconInvestment}>📦</span>
+                        </div>
+                        
+                        <div className={styles.cardChange}>+15.7% este mês</div>
+                    </div>
+                </section>
+
+                {/* Gráficos e Detalhes */}
+
+            </main>
+        </div>
     );
 }

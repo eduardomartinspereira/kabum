@@ -1,0 +1,347 @@
+:root {
+    --primary: #355cc0;
+    --primary-hover: #2a4a9a;
+    --bg: #f8fafc;
+    --bg-card: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --radius: 0.75rem;
+}
+
+.dashboard {
+    min-height: 100vh;
+    background: var(--bg);
+}
+
+/* Header */
+.header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    box-shadow: var(--shadow);
+}
+
+.headerContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.welcome {
+    p {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 1rem;
+    }
+}
+
+.welcomeHeader {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+
+    h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+    }
+}
+
+.headerLogo {
+    height: auto;
+    object-fit: contain;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    span {
+        font-weight: 500;
+        color: var(--text);
+    }
+}
+
+.avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.logoutBtn {
+    padding: 0.5rem 1rem;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+
+    &:hover {
+        background: #dc2626;
+    }
+}
+
+/* Content */
+.content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Summary Cards */
+.summaryCards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    h3 {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    span {
+        font-size: 1.25rem;
+    }
+}
+
+.cardValue {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+
+.cardChange {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--success);
+
+    &.negative {
+        color: var(--danger);
+    }
+}
+
+/* Icons */
+.iconBalance {
+    color: #f59e0b;
+}
+
+.iconIncome {
+    color: var(--success);
+}
+
+.iconExpense {
+    color: var(--danger);
+}
+
+.iconInvestment {
+    color: var(--primary);
+}
+
+/* Charts Section */
+.chartsSection {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Goal Card */
+.goalCard {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+
+    h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0 0 1.5rem 0;
+    }
+
+    p {
+        margin: 1rem 0 0 0;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+}
+
+.goalProgress {
+    margin-bottom: 1rem;
+}
+
+.progressBar {
+    background: #e2e8f0;
+    border-radius: 9999px;
+    height: 0.75rem;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.progressFill {
+    background: linear-gradient(to right, var(--primary), #4f46e5);
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 300ms ease;
+}
+
+.progressText {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text);
+}
+
+/* Transactions Card */
+.transactionsCard {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+
+    h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0 0 1.5rem 0;
+    }
+}
+
+.transactionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.transaction {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.transactionInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.transactionType {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.transactionDesc {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.transactionAmount {
+    font-weight: 600;
+    font-size: 0.875rem;
+
+    &.positive {
+        color: var(--success);
+    }
+
+    &.negative {
+        color: var(--danger);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header {
+        padding: 1rem;
+    }
+
+    .headerContent {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .headerActions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .content {
+        padding: 1rem;
+    }
+
+    .summaryCards {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .welcome h1 {
+        font-size: 1.5rem;
+    }
+
+    .cardValue {
+        font-size: 1.5rem;
+    }
+}

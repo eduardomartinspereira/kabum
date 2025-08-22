@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ToastContainer } from 'react-toastify';
+import Providers from './components/Providers';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/globals.scss';
 
@@ -40,7 +41,9 @@ export default function RootLayout({
                     draggable
                     pauseOnHover
                 />
-                {children}
+                <Providers>
+                    {children}
+                </Providers>
             </body>
         </html>
     );
