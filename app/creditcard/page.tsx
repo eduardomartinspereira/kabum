@@ -12,7 +12,7 @@ declare global {
 
 type CardData = {
   token: string;
-  issuerId?: number | string;       // vem do Brick (não enviamos ao backend)
+  issuerId?: number | string;       
   paymentMethodId: string;          // idem
   installments?: number | string;
 };
@@ -37,7 +37,7 @@ function CreditCardCheckoutInner() {
   const brickRef = useRef<{ destroy?: () => void } | null>(null);
   const submittingRef = useRef(false);
 
-  // cria o Brick quando SDK carregar e CPF estiver válido
+  
   useEffect(() => {
     if (!sdkReady) return;
     if (!window.MercadoPago) return;
