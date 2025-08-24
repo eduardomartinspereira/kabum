@@ -111,11 +111,10 @@ export class MercadoPagoService {
       const [firstName, ...rest] = paymentData.name.trim().split(' ');
       const lastName = rest.join(' ');
 
-      // 1) Preferência — sem auto_return e SEM additional_info (no SDK é string)
+      // 1) Preferência — sem auto_return e SEM additional_info (no SDK pode exigir string)
       const preferenceClient = new Preference(client);
       await preferenceClient.create({
         body: {
-          /* eslint-disable @typescript-eslint/no-explicit-any */
           items: prefItems as any,
           payer: {
             name: paymentData.name,
@@ -203,10 +202,12 @@ export class MercadoPagoService {
   }
 
   /** ==== CARTÃO ==== */
+  // Observação: aceitamos issuer_id/payment_method_id no tipo para compatibilidade,
+  // mas NÃO os enviamos ao MP para evitar diff_param_bins. O MP deduz pelo token.
   async createCardPayment(args: {
     token: string;
-    issuer_id?: string;
-    payment_method_id: string;
+    issuer_id?: string;              // ignorado
+    payment_method_id?: string;      // ignorado
     installments?: number;
     amount: number;
     description?: string;
@@ -214,7 +215,6 @@ export class MercadoPagoService {
     payer: {
       email: string;
       identification: { type: 'CPF' | 'CNPJ'; number: string };
-      /** Opcional – usado para preencher nome no webhook/email */
       name?: string;
     };
   }) {
@@ -236,9 +236,7 @@ export class MercadoPagoService {
       const resp = await paymentClient.create({
         body: {
           token: args.token,
-          // issuer_id deve ser number
-          issuer_id: args.issuer_id ? Number(args.issuer_id) : undefined,
-          payment_method_id: args.payment_method_id,
+          // NÃO enviar issuer_id nem payment_method_id para evitar diff_param_bins
           transaction_amount: amountNum,
           installments: Number(args.installments || 1),
           description: args.description || 'Pagamento com cartão',

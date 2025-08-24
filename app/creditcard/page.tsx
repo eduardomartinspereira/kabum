@@ -6,14 +6,14 @@ import { useSearchParams, useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
-    MercadoPago?: any; // se quiser tipar depois, pode criar uma interface MP
+    MercadoPago?: any;
   }
 }
 
 type CardData = {
   token: string;
-  issuerId?: number | string;
-  paymentMethodId: string;
+  issuerId?: number | string;       // vem do Brick (não enviamos ao backend)
+  paymentMethodId: string;          // idem
   installments?: number | string;
 };
 
@@ -26,6 +26,8 @@ function CreditCardCheckoutInner() {
   const emailDefault = decodeURIComponent(sp.get('email') || '');
 
   const [cpf, setCpf] = useState('');
+  const cpfDigits = useMemo(() => cpf.replace(/\D/g, ''), [cpf]);
+
   const [sdkReady, setSdkReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -33,8 +35,9 @@ function CreditCardCheckoutInner() {
   const PUBLIC_KEY = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
   const containerId = 'cardBrickContainer';
   const brickRef = useRef<{ destroy?: () => void } | null>(null);
+  const submittingRef = useRef(false);
 
-  // cria o Brick quando SDK carregar e CPF estiver preenchido
+  // cria o Brick quando SDK carregar e CPF estiver válido
   useEffect(() => {
     if (!sdkReady) return;
     if (!window.MercadoPago) return;
@@ -42,6 +45,7 @@ function CreditCardCheckoutInner() {
       setError('NEXT_PUBLIC_MP_PUBLIC_KEY não definida no .env');
       return;
     }
+    if (cpfDigits.length !== 11) return;
 
     const mp = new window.MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
     const bricks = mp.bricks();
@@ -54,17 +58,15 @@ function CreditCardCheckoutInner() {
           onError: (err: unknown) =>
             setError(err instanceof Error ? err.message : 'Erro no Brick'),
           onSubmit: async (cardData: CardData) => {
+            if (submittingRef.current) return; // evita duplo submit
+            submittingRef.current = true;
             try {
               setSubmitting(true);
               setError(null);
 
+              // ⛔️ NÃO envie issuer_id / payment_method_id (evita diff_param_bins)
               const body = {
                 token: cardData.token,
-                issuer_id:
-                  typeof cardData.issuerId === 'string'
-                    ? Number(cardData.issuerId)
-                    : cardData.issuerId,
-                payment_method_id: cardData.paymentMethodId,
                 installments: Number(cardData.installments || 1),
                 amount,
                 description: 'Pedido na Loja',
@@ -72,7 +74,7 @@ function CreditCardCheckoutInner() {
                 payer: {
                   name: nameDefault,
                   email: emailDefault,
-                  identification: { type: 'CPF', number: cpf.replace(/\D/g, '') },
+                  identification: { type: 'CPF', number: cpfDigits },
                 },
               };
 
@@ -81,20 +83,27 @@ function CreditCardCheckoutInner() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
               });
-              const json = await res.json();
+
+              // resposta pode não ser JSON em caso de erro
+              let data: any = null;
+              try { data = await res.json(); } 
+              catch { data = { error: await res.text() }; }
 
               if (!res.ok) {
-                throw new Error(json?.error || 'Falha ao processar pagamento');
+                throw new Error(data?.error || 'Falha ao processar pagamento');
               }
 
-              alert(`Pagamento enviado! ID: ${json.id} | Status: ${json.status}`);
-              router.push(
-                `/success?paymentId=${json.id}&status=${json.status}&ref=${json.external_reference || ''}`,
+              // ✅ sem alert — redireciona pra página de sucesso
+              router.replace(
+                `/success?paymentId=${encodeURIComponent(data.id)}&status=${encodeURIComponent(
+                  data.status || ''
+                )}&ref=${encodeURIComponent(data.external_reference || '')}`
               );
             } catch (e) {
               const msg = e instanceof Error ? e.message : 'Erro ao enviar pagamento';
               setError(msg);
             } finally {
+              submittingRef.current = false;
               setSubmitting(false);
             }
           },
@@ -107,7 +116,7 @@ function CreditCardCheckoutInner() {
         setError(e instanceof Error ? e.message : 'Falha ao criar o Brick');
       });
 
-  // destruir o brick ao desmontar / alterar deps
+    // destruir o brick ao desmontar / alterar deps
     return () => {
       try {
         brickRef.current?.destroy?.();
@@ -115,9 +124,9 @@ function CreditCardCheckoutInner() {
         if (el) el.innerHTML = '';
       } catch {}
     };
-  }, [sdkReady, PUBLIC_KEY, amount, cpf, nameDefault, emailDefault, router]);
+  }, [sdkReady, PUBLIC_KEY, amount, cpfDigits, nameDefault, emailDefault, router]);
 
-  const canCreateBrick = sdkReady && !!cpf && cpf.replace(/\D/g, '').length === 11;
+  const canCreateBrick = sdkReady && cpfDigits.length === 11;
 
   return (
     <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
@@ -130,12 +139,20 @@ function CreditCardCheckoutInner() {
 
       <button
         onClick={() => router.back()}
-        style={{ marginBottom: 16, border: '1px solid #e5e7eb', padding: '6px 10px', borderRadius: 8 }}
+        style={{
+          marginBottom: 16,
+          border: '1px solid #e5e7eb',
+          padding: '6px 10px',
+          borderRadius: 8,
+          background: '#fff',
+        }}
       >
         ← Voltar
       </button>
 
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>Pagamento com Cartão</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>
+        Pagamento com Cartão
+      </h1>
       <p style={{ color: '#6b7280', marginBottom: 16 }}>
         Total: <strong>R$ {amount.toFixed(2).replace('.', ',')}</strong>
       </p>
@@ -148,6 +165,7 @@ function CreditCardCheckoutInner() {
             onChange={(e) => setCpf(e.target.value)}
             placeholder="000.000.000-00"
             style={{ border: '1px solid #e5e7eb', padding: 10, borderRadius: 8 }}
+            disabled={submitting}
           />
         </label>
 
@@ -157,7 +175,15 @@ function CreditCardCheckoutInner() {
         </div>
 
         {error && (
-          <div style={{ background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca', padding: 12, borderRadius: 8 }}>
+          <div
+            style={{
+              background: '#fee2e2',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+              padding: 12,
+              borderRadius: 8,
+            }}
+          >
             {error}
           </div>
         )}
@@ -168,7 +194,7 @@ function CreditCardCheckoutInner() {
           Informe um CPF válido para carregar o formulário do cartão.
         </div>
       ) : (
-        <div id={containerId} style={{ minHeight: 320 }} />
+        <div id={containerId} style={{ minHeight: 320, opacity: submitting ? 0.6 : 1 }} />
       )}
 
       {submitting && <p style={{ marginTop: 12 }}>Enviando pagamento…</p>}
@@ -177,7 +203,6 @@ function CreditCardCheckoutInner() {
 }
 
 export default function CreditCardCheckoutPage() {
-  // ✅ Agora o componente que usa useSearchParams fica dentro de um Suspense
   return (
     <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
       <CreditCardCheckoutInner />
