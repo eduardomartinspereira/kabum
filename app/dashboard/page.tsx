@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import React from 'react';
-import LogoutButton from '../components/logoutbutton/index';
+import LogoutButton from '../components/logoutbutton';
 
 
 
