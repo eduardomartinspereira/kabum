@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
-import Header from './components/header';
+import Header from './components/Header';
 import styles from '../styles/page.module.scss';
 
 export default function ProductShowcase() {

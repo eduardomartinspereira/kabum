@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
 
-import Header from '../components/header';
+import Header from '../components/Header';
 import styles from '../../styles/checkout.module.scss';
 
 type Variation = {
