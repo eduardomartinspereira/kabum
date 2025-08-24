@@ -1,10 +1,16 @@
 // app/pix-checkout/page.tsx
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+<<<<<<< HEAD
 import { toast } from 'react-toastify';
 import Header from '../components/Header';
+=======
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { PaymentStatusNotification } from '../components/PaymentStatusNotification';
+import { PaymentSuccessModal } from '../components/PaymentSuccessModal';
+>>>>>>> 29f68300626c3ca14df050a0052e6c8cee503762
 
 type PixResp = {
   id: string;
@@ -55,6 +61,27 @@ function PixCheckoutInner() {
   const [loading, setLoading] = useState(false);
   const [pix, setPix] = useState<PixResp | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Hook para verificar status do pagamento
+  const { status, loading: statusLoading, error: statusError } = usePaymentStatus({
+    paymentId: pix?.id || null,
+    enabled: !!pix?.id,
+    onApproved: () => {
+      setShowNotification(true);
+      setShowSuccessModal(true);
+      // Redirecionar para página de sucesso após 8 segundos (tempo para ver o modal)
+      setTimeout(() => {
+        router.push(`/success?paymentId=${pix?.id}&status=approved&ref=${pix?.external_reference}`);
+      }, 8000);
+    },
+    onStatusChange: (newStatus) => {
+      if (newStatus && newStatus !== 'pending') {
+        setShowNotification(true);
+      }
+    },
+  });
 
   async function gerarPix(e: React.FormEvent) {
     e.preventDefault();
@@ -93,7 +120,24 @@ function PixCheckoutInner() {
     }
   }
 
+  // Mostrar notificação quando status mudar
+  useEffect(() => {
+    if (status && status !== 'pending') {
+      setShowNotification(true);
+    }
+  }, [status]);
+
+  const handleContinueShopping = () => {
+    setShowSuccessModal(false);
+    router.push('/');
+  };
+
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
+  };
+
   return (
+<<<<<<< HEAD
     <main style={{ 
       maxWidth: 920, 
       margin: '0 auto', 
@@ -103,6 +147,29 @@ function PixCheckoutInner() {
       alignItems: 'center',
       minHeight: 'calc(100vh - 200px)'
     }}>
+=======
+    <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
+      {/* Notificação de status */}
+      {showNotification && pix?.id && status && (
+        <PaymentStatusNotification
+          status={status}
+          paymentId={pix.id}
+          onClose={() => setShowNotification(false)}
+        />
+      )}
+
+      {/* Modal de sucesso */}
+      {showSuccessModal && pix && (
+        <PaymentSuccessModal
+          paymentId={pix.id}
+          externalReference={pix.external_reference}
+          amount={amount}
+          onClose={handleCloseModal}
+          onContinue={handleContinueShopping}
+        />
+      )}
+
+>>>>>>> 29f68300626c3ca14df050a0052e6c8cee503762
       <button
         onClick={() => router.back()}
         style={{ 
@@ -195,6 +262,50 @@ function PixCheckoutInner() {
           textAlign: 'center'
         }}>
           <h2 style={{ fontSize: 18, fontWeight: 700 }}>QR Code</h2>
+          
+          {/* Status do pagamento */}
+          {status && (
+            <div style={{
+              padding: 12,
+              borderRadius: 8,
+              background: status === 'approved' ? '#ecfdf5' : 
+                         status === 'rejected' ? '#fef2f2' : 
+                         status === 'in_process' ? '#eff6ff' : '#fefce8',
+              border: `1px solid ${
+                status === 'approved' ? '#d1fae5' : 
+                status === 'rejected' ? '#fecaca' : 
+                status === 'in_process' ? '#bfdbfe' : '#fde68a'
+              }`,
+              color: status === 'approved' ? '#065f46' : 
+                     status === 'rejected' ? '#991b1b' : 
+                     status === 'in_process' ? '#1e40af' : '#92400e'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>
+                  {status === 'approved' ? '✅' : 
+                   status === 'rejected' ? '❌' : 
+                   status === 'in_process' ? '🔄' : '⏳'}
+                </span>
+                <strong>
+                  Status: {status === 'approved' ? 'Aprovado' : 
+                          status === 'rejected' ? 'Rejeitado' : 
+                          status === 'in_process' ? 'Em Processamento' : 
+                          status === 'pending' ? 'Pendente' : status}
+                </strong>
+              </div>
+              {statusLoading && (
+                <p style={{ margin: '4px 0 0', fontSize: 14, opacity: 0.8 }}>
+                  Verificando status...
+                </p>
+              )}
+              {statusError && (
+                <p style={{ margin: '4px 0 0', fontSize: 14, color: '#dc2626' }}>
+                  Erro ao verificar status: {statusError}
+                </p>
+              )}
+            </div>
+          )}
+
           {pix.qr_code_base64 ? (
             <img
               src={`data:image/png;base64,${pix.qr_code_base64}`}
@@ -204,6 +315,7 @@ function PixCheckoutInner() {
           ) : (
             <p>Copie o código abaixo no seu app do banco.</p>
           )}
+          
           <label style={{ display: 'grid', gap: 6 }}>
             <span>Código copia e cola</span>
             <textarea
@@ -212,12 +324,14 @@ function PixCheckoutInner() {
               style={{ border: '1px solid #e5e7eb', padding: 10, borderRadius: 8, minHeight: 100 }}
             />
           </label>
+          
           <button
             onClick={() => navigator.clipboard.writeText(pix.qr_code || '')}
             style={{ border: '1px solid #e5e7eb', padding: '10px 12px', borderRadius: 8, width: 200, margin: '0 auto' }}
           >
             Copiar código
           </button>
+<<<<<<< HEAD
           
           {/* Informações do pedido */}
           <div style={{ 
@@ -247,6 +361,31 @@ function PixCheckoutInner() {
                 </span>
               </div>
             </div>
+=======
+
+          {/* Instruções para o usuário */}
+          <div style={{
+            marginTop: 16,
+            padding: 16,
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: 8,
+            fontSize: 14,
+            color: '#475569'
+          }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: 16, fontWeight: 600 }}>📱 Como pagar:</h3>
+            <ol style={{ margin: 0, paddingLeft: 20 }}>
+              <li>Abra o app do seu banco</li>
+              <li>Escolha a opção PIX</li>
+              <li>Escaneie o QR Code ou cole o código copia e cola</li>
+              <li>Confirme o pagamento</li>
+              <li>Aguarde a confirmação automática</li>
+            </ol>
+            <p style={{ margin: '12px 0 0 0', fontSize: 13, color: '#64748b' }}>
+              <strong>💡 Dica:</strong> O status será atualizado automaticamente. 
+              Quando aprovado, você verá uma tela de confirmação e será redirecionado automaticamente.
+            </p>
+>>>>>>> 29f68300626c3ca14df050a0052e6c8cee503762
           </div>
         </section>
       )}
