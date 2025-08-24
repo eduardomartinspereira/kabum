@@ -1,5 +1,6 @@
 :root {
     --primary: #355cc0;
+    --kabum-blue: #1e3a8a;
     --primary-hover: #2a4a9a;
     --bg: #f8fafc;
     --bg-card: #ffffff;
@@ -12,6 +13,15 @@
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --radius: 0.75rem;
+    --kabum-dark-blue: #1e40af;
+  --kabum-orange: #f97316;
+  --kabum-light-blue: #3b82f6;
+  --white: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
 @theme inline {
@@ -21,6 +31,10 @@
     --font-mono: var(--font-geist-mono);
 }
 
+*{
+    margin: 0;
+    padding: 0;
+}
 @media (prefers-color-scheme: dark) {
     :root {
         --background: #0a0a0a;

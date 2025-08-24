@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Header from '../components/Header';
-import styles from './search.module.scss';
+import styles from '../../styles/search.module.scss';
 
 // Tipos mínimos p/ evitar "any"
 type Variation = { price: number | string };

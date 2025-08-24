@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
 
 import Header from '../components/Header';
-import styles from './checkout.module.scss';
+import styles from '../../styles/checkout.module.scss';
 
 type Variation = {
   id: number | string;
