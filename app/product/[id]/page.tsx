@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
-import Header from '../../components/Header';
+import Header from '../../components/header';
 import styles from '../../../styles/product.module.scss';
 
 export default function ProductPage() {

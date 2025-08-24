@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Header from '../components/Header';
+import Header from '../components/header';
 import styles from '../../styles/search.module.scss';
 
 // Tipos mínimos p/ evitar "any"
