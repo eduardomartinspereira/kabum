@@ -1,43 +1,64 @@
 'use client';
 
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import styles from './search.module.scss';
 
-export default function SearchPage() {
+// Tipos mínimos p/ evitar "any"
+type Variation = { price: number | string };
+type ProductImage = { url: string; alt?: string };
+type Product = {
+  id: string | number;
+  name: string;
+  description: string;
+  brand?: string;
+  category: string;
+  images?: ProductImage[];
+  variations: Variation[];
+};
+
+function SearchContent() {
   const searchParams = useSearchParams();
-  const query = searchParams.get('q');
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const query = searchParams.get('q') || '';
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (query) {
-      const searchProducts = async () => {
-        try {
-          const response = await fetch('/api/products');
-          if (response.ok) {
-            const allProducts = await response.json();
-            
-            // Filtrar produtos baseado na busca
-            const filteredProducts = allProducts.filter((product: any) => 
-              product.name.toLowerCase().includes(query.toLowerCase()) ||
-              product.description.toLowerCase().includes(query.toLowerCase()) ||
-              product.brand?.toLowerCase().includes(query.toLowerCase()) ||
-              product.category.toLowerCase().includes(query.toLowerCase())
-            );
-            
-            setProducts(filteredProducts);
-          }
-        } catch (error) {
-          console.error('Erro ao buscar produtos:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
+    if (!query) return;
 
-      searchProducts();
-    }
+    setLoading(true);
+    const searchProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        if (!response.ok) return;
+
+        const allProducts: Product[] = await response.json();
+
+        // Filtrar produtos baseado na busca
+        const q = query.toLowerCase();
+        const filtered = allProducts.filter((product) => {
+          const name = product.name?.toLowerCase() || '';
+          const desc = product.description?.toLowerCase() || '';
+          const brand = product.brand?.toLowerCase() || '';
+          const cat = product.category?.toLowerCase() || '';
+          return (
+            name.includes(q) ||
+            desc.includes(q) ||
+            brand.includes(q) ||
+            cat.includes(q)
+          );
+        });
+
+        setProducts(filtered);
+      } catch (error) {
+        console.error('Erro ao buscar produtos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    searchProducts();
   }, [query]);
 
   if (!query) {
@@ -55,11 +76,13 @@ export default function SearchPage() {
   return (
     <div className={styles.searchPage}>
       <Header />
-      
+
       <div className={styles.searchContent}>
         <div className={styles.searchHeader}>
           <h1>Resultados da busca</h1>
-          <p>Buscando por: <strong>"{query}"</strong></p>
+          <p>
+            Buscando por: <strong>{query}</strong>
+          </p>
           <p className={styles.resultsCount}>
             {loading ? 'Carregando...' : `${products.length} produto(s) encontrado(s)`}
           </p>
@@ -78,25 +101,34 @@ export default function SearchPage() {
         ) : (
           <div className={styles.productsGrid}>
             {products.map((product) => {
-              const minPrice = Math.min(...product.variations.map((v: any) => parseFloat(v.price)));
-              const maxPrice = Math.max(...product.variations.map((v: any) => parseFloat(v.price)));
-              const priceRange = minPrice === maxPrice 
-                ? `R$ ${minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                : `R$ ${minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - R$ ${maxPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+              const prices = (product.variations ?? [])
+                .map((v) => Number(v.price))
+                .filter((n) => Number.isFinite(n));
+              const minPrice = prices.length ? Math.min(...prices) : 0;
+              const maxPrice = prices.length ? Math.max(...prices) : 0;
+
+              const priceRange =
+                minPrice === maxPrice
+                  ? `R$ ${minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                  : `R$ ${minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - R$ ${maxPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
               return (
                 <div key={product.id} className={styles.productCard}>
                   <div className={styles.productImage}>
                     {product.images && product.images.length > 0 ? (
-                      <img 
-                        src={product.images[0].url} 
+                      // Se quiser sumir com o warning, troque por next/image e configure domains no next.config.js
+                      <img
+                        src={product.images[0].url}
                         alt={product.images[0].alt || product.name}
                         className={styles.productImage}
                       />
                     ) : (
                       <span className={styles.productIcon}>
-                        {product.category === 'Eletrônicos' ? '📱' : 
-                         product.category === 'Calçados' ? '👟' : '🛍️'}
+                        {product.category === 'Eletrônicos'
+                          ? '📱'
+                          : product.category === 'Calçados'
+                          ? '👟'
+                          : '🛍️'}
                       </span>
                     )}
                   </div>
@@ -110,11 +142,13 @@ export default function SearchPage() {
                     <div className={styles.productPrice}>
                       <span className={styles.price}>{priceRange}</span>
                       <span className={styles.installments}>
-                        ou 10x de R$ {(minPrice / 10).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        ou 10x de R$ {(minPrice / 10).toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                        })}
                       </span>
                     </div>
-                    <button 
-                      onClick={() => window.location.href = `/product/${product.id}`}
+                    <button
+                      onClick={() => (window.location.href = `/product/${product.id}`)}
                       className={styles.viewProductButton}
                     >
                       Ver Produto
@@ -128,4 +162,14 @@ export default function SearchPage() {
       </div>
     </div>
   );
-} 
+}
+
+export default function SearchPage() {
+  // ✅ Ao envolver o componente que usa useSearchParams com Suspense,
+  // evitamos o erro "useSearchParams() should be wrapped in a suspense boundary".
+  return (
+    <Suspense fallback={<div className={styles.searchContent}>Carregando…</div>}>
+      <SearchContent />
+    </Suspense>
+  );
+}

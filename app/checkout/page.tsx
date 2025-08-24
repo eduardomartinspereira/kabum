@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
@@ -28,7 +28,7 @@ type Product = {
 const brl = (n: number) =>
   n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function CheckoutPage() {
+function CheckoutInner() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,10 +42,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
 
-  const unitPrice = useMemo(
-    () => Number(variation?.price ?? 0),
-    [variation?.price]
-  );
+  const unitPrice = useMemo(() => Number(variation?.price ?? 0), [variation?.price]);
   const subtotal = useMemo(() => unitPrice * quantity, [unitPrice, quantity]);
   const total = subtotal;
 
@@ -74,16 +71,16 @@ export default function CheckoutPage() {
         }
         const data: Product = await res.json();
         const picked =
-          data.variations?.find(v => String(v.id) === String(variationId)) ?? null;
+          data.variations?.find((v) => String(v.id) === String(variationId)) ?? null;
 
         setProduct(picked ? data : null);
         setVariation(picked ?? null);
 
         if (picked && picked.stock > 0) {
-          setQuantity(q => Math.min(Math.max(1, q), picked.stock));
+          setQuantity((q) => Math.min(Math.max(1, q), picked.stock));
         }
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') {
+      } catch (err) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
           console.error('Erro ao buscar produto:', err);
           setProduct(null);
           setVariation(null);
@@ -365,5 +362,14 @@ export default function CheckoutPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  // ✅ Envolve quem usa useSearchParams com Suspense para evitar o erro de CSR bailout
+  return (
+    <Suspense fallback={<div className={styles.loadingContainer}><div className={styles.loadingSpinner} />Carregando…</div>}>
+      <CheckoutInner />
+    </Suspense>
   );
 }

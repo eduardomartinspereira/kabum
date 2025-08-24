@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/products/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 // Reutiliza o Prisma em dev para evitar múltiplas conexões
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const prisma =
   (globalThis as any).prisma ||
   new PrismaClient({ log: process.env.NODE_ENV === 'development' ? ['error'] : [] });

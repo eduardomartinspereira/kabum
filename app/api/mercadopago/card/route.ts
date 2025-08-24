@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         name: payerName,
       },
     });
-
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     return NextResponse.json({ ...mpData }, { status: 200 });
   } catch (e: any) {
     console.error('[CARD-API] ❌ Erro ao processar pagamento:', e);

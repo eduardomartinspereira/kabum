@@ -1,63 +1,51 @@
-// app/api/pix-payment/route.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-// caminho relativo a partir de app/api/pix-payment/route.ts -> /lib/mercadopago
-import { mercadoPagoService } from '../../../lib/mercadopago';
+import { mercadoPagoService } from '../../lib/mercadopago';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({} as any));
-    const { name, email, cpf, amount } = body || {};
+    const body = await request.json();
+    const { name, email, cpf, amount } = body;
 
-    console.log('[PIX-API] ▶︎ recebendo', { name, email, cpf, amount });
-
-    // --- Validações básicas ---
-    if (!name || !email || !cpf || amount == null) {
+    // validações simples
+    if (!name || !email || !cpf || amount === undefined || amount === null) {
       return NextResponse.json(
-        { error: 'Todos os campos são obrigatórios (name, email, cpf, amount).' },
+        { success: false, error: 'Todos os campos são obrigatórios' },
+        { status: 400 }
+      );
+    }
+    const cpfClean = String(cpf).replace(/\D/g, '');
+    if (cpfClean.length !== 11) {
+      return NextResponse.json(
+        { success: false, error: 'CPF inválido' },
+        { status: 400 }
+      );
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+      return NextResponse.json(
+        { success: false, error: 'Email inválido' },
         { status: 400 }
       );
     }
 
-    const cpfClean = String(cpf).replace(/\D/g, '');
-    if (cpfClean.length !== 11) {
-      return NextResponse.json({ error: 'CPF inválido.' }, { status: 400 });
-    }
-
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email));
-    if (!emailOk) {
-      return NextResponse.json({ error: 'E-mail inválido.' }, { status: 400 });
-    }
-
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) {
-      return NextResponse.json({ error: 'Valor (amount) inválido.' }, { status: 400 });
-    }
-
-    // --- Criação PIX ---
-    console.log('[PIX-API] criando pagamento…');
+    // cria o PIX
     const pix = await mercadoPagoService.createPixPayment({
-      name: String(name).trim(),
-      email: String(email).trim().toLowerCase(),
+      name: String(name),
+      email: String(email),
       cpf: cpfClean,
-      amount: value,
+      amount: Number(amount),
     });
 
-    console.log('[PIX-API] ✅ criado', {
-      id: pix.id,
-      status: pix.status,
-      hasQr: !!pix.qr_code,
-      hasImg: !!pix.qr_code_base64,
-      ref: pix.external_reference,
-    });
-
+    // *** SEMPRE este shape ***
     return NextResponse.json({ success: true, data: pix }, { status: 200 });
   } catch (err: any) {
-    console.error('[PIX-API] ❌ erro', err);
+    console.error('[PIX-API] erro ao criar PIX:', err);
     return NextResponse.json(
-      { error: 'Erro interno do servidor', details: err?.message || String(err) },
+      {
+        success: false,
+        error: 'Erro interno do servidor',
+        details: err?.message || 'unknown',
+      },
       { status: 500 }
     );
   }

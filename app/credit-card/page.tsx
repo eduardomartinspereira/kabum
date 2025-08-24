@@ -1,16 +1,23 @@
 'use client';
 
 import Script from 'next/script';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
-    MercadoPago?: any;
+    MercadoPago?: any; // se quiser tipar depois, pode criar uma interface MP
   }
 }
 
-export default function CreditCardCheckoutPage() {
+type CardData = {
+  token: string;
+  issuerId?: number | string;
+  paymentMethodId: string;
+  installments?: number | string;
+};
+
+function CreditCardCheckoutInner() {
   const sp = useSearchParams();
   const router = useRouter();
 
@@ -25,7 +32,7 @@ export default function CreditCardCheckoutPage() {
 
   const PUBLIC_KEY = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
   const containerId = 'cardBrickContainer';
-  const brickRef = useRef<any>(null);
+  const brickRef = useRef<{ destroy?: () => void } | null>(null);
 
   // cria o Brick quando SDK carregar e CPF estiver preenchido
   useEffect(() => {
@@ -44,15 +51,19 @@ export default function CreditCardCheckoutPage() {
         initialization: { amount },
         callbacks: {
           onReady: () => setError(null),
-          onError: (err: any) => setError(err?.message || 'Erro no Brick'),
-          onSubmit: async (cardData: any) => {
+          onError: (err: unknown) =>
+            setError(err instanceof Error ? err.message : 'Erro no Brick'),
+          onSubmit: async (cardData: CardData) => {
             try {
               setSubmitting(true);
               setError(null);
 
               const body = {
                 token: cardData.token,
-                issuer_id: cardData.issuerId,
+                issuer_id:
+                  typeof cardData.issuerId === 'string'
+                    ? Number(cardData.issuerId)
+                    : cardData.issuerId,
                 payment_method_id: cardData.paymentMethodId,
                 installments: Number(cardData.installments || 1),
                 amount,
@@ -77,18 +88,26 @@ export default function CreditCardCheckoutPage() {
               }
 
               alert(`Pagamento enviado! ID: ${json.id} | Status: ${json.status}`);
-              router.push(`/success?paymentId=${json.id}&status=${json.status}&ref=${json.external_reference || ''}`);
-            } catch (e: any) {
-              setError(e?.message || 'Erro ao enviar pagamento');
+              router.push(
+                `/success?paymentId=${json.id}&status=${json.status}&ref=${json.external_reference || ''}`,
+              );
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : 'Erro ao enviar pagamento';
+              setError(msg);
             } finally {
               setSubmitting(false);
             }
           },
         },
       })
-      .then((b: any) => (brickRef.current = b))
-      .catch((e: any) => setError(e?.message || 'Falha ao criar o Brick'));
+      .then((b: { destroy?: () => void }) => {
+        brickRef.current = b;
+      })
+      .catch((e: unknown) => {
+        setError(e instanceof Error ? e.message : 'Falha ao criar o Brick');
+      });
 
+  // destruir o brick ao desmontar / alterar deps
     return () => {
       try {
         brickRef.current?.destroy?.();
@@ -154,5 +173,14 @@ export default function CreditCardCheckoutPage() {
 
       {submitting && <p style={{ marginTop: 12 }}>Enviando pagamento…</p>}
     </main>
+  );
+}
+
+export default function CreditCardCheckoutPage() {
+  // ✅ Agora o componente que usa useSearchParams fica dentro de um Suspense
+  return (
+    <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
+      <CreditCardCheckoutInner />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
+import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
 
 type PixResp = {
   id: string;
@@ -11,7 +11,7 @@ type PixResp = {
   external_reference: string;
 };
 
-export default function PixCheckoutPage() {
+function PixCheckoutInner() {
   const sp = useSearchParams();
   const router = useRouter();
 
@@ -27,7 +27,7 @@ export default function PixCheckoutPage() {
   const [pix, setPix] = useState<PixResp | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  async function gerarPix(e: React.FormEvent) {
+  async function gerarPix(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErr(null);
     setPix(null);
@@ -48,8 +48,9 @@ export default function PixCheckoutPage() {
         throw new Error(json?.error || 'Falha (200) ao gerar PIX');
       }
       setPix(json.data as PixResp);
-    } catch (e: any) {
-      setErr(e?.message || 'Erro ao gerar PIX');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erro ao gerar PIX';
+      setErr(msg);
     } finally {
       setLoading(false);
     }
@@ -158,5 +159,14 @@ export default function PixCheckoutPage() {
         </section>
       )}
     </main>
+  );
+}
+
+export default function PixCheckoutPage() {
+  // ✅ Envolve quem usa useSearchParams com Suspense para evitar o erro de CSR bailout
+  return (
+    <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
+      <PixCheckoutInner />
+    </Suspense>
   );
 }

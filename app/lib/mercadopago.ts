@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/mercadopago.ts
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 
+/** ====== Credenciais ====== */
 const MP_ACCESS_TOKEN =
   process.env.MERCADOPAGO_ACCESS_TOKEN || 'YOUR_ACCESS_TOKEN';
 
@@ -10,12 +12,13 @@ if (!process.env.MERCADOPAGO_ACCESS_TOKEN || MP_ACCESS_TOKEN === 'YOUR_ACCESS_TO
 
 const client = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
 
-/** Resolve e valida a URL de webhook. Só aceita HTTPS e ignora localhost. */
+/** ====== Helpers ====== */
+/** URL do webhook: aceita somente HTTPS; ignora localhost */
 function getNotificationUrl(): string | undefined {
-  const rawEnv = (process.env.MP_NOTIFICATION_URL || '').trim();
-  if (rawEnv) {
+  const raw = (process.env.MP_NOTIFICATION_URL || '').trim();
+  if (raw) {
     try {
-      const u = new URL(rawEnv);
+      const u = new URL(raw);
       if (u.protocol !== 'https:') return undefined;
       return u.href;
     } catch {
@@ -29,9 +32,7 @@ function getNotificationUrl(): string | undefined {
       const u = new URL(base);
       if (
         u.protocol === 'https:' &&
-        u.hostname !== 'localhost' &&
-        u.hostname !== '127.0.0.1' &&
-        u.hostname !== '::1'
+        !['localhost', '127.0.0.1', '::1'].includes(u.hostname)
       ) {
         return `${u.origin}/api/webhook`;
       }
@@ -42,6 +43,31 @@ function getNotificationUrl(): string | undefined {
   return undefined;
 }
 
+/** back_urls apenas se base HTTPS válida (ex.: ngrok) */
+function getHttpsBackUrls():
+  | { success: string; failure: string; pending: string }
+  | undefined {
+  const base = (process.env.NEXT_PUBLIC_BASE_URL || '').trim();
+  if (!base) return undefined;
+  try {
+    const u = new URL(base);
+    if (
+      u.protocol === 'https:' &&
+      !['localhost', '127.0.0.1', '::1'].includes(u.hostname)
+    ) {
+      return {
+        success: `${u.origin}/success`,
+        failure: `${u.origin}/failure`,
+        pending: `${u.origin}/pending`,
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
+
+/** ====== Tipos ====== */
 export interface PaymentData {
   name: string;
   email: string;
@@ -57,22 +83,27 @@ export interface PixPaymentResponse {
   external_reference: string;
 }
 
+/** ====== Serviço ====== */
 export class MercadoPagoService {
   /** ==== PIX ==== */
   async createPixPayment(paymentData: PaymentData): Promise<PixPaymentResponse> {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
       const notificationUrl = getNotificationUrl();
+      const backUrls = getHttpsBackUrls(); // só HTTPS
       console.log('[MP] notificationUrl (PIX):', notificationUrl);
+      console.log('[MP] back_urls (PIX):', backUrls);
 
       const externalReference = `order_${Date.now()}`;
+      const amountNum = Number(paymentData.amount);
 
-      const items = [
+      // Para Preference.items o SDK exige `id`
+      const prefItems = [
         {
+          id: 'DIGITAL-1',
           title: 'Produto Digital',
           description: 'Acesso completo ao conteúdo',
           quantity: 1,
-          unit_price: Number(paymentData.amount),
+          unit_price: amountNum,
           currency_id: 'BRL',
         },
       ];
@@ -80,11 +111,12 @@ export class MercadoPagoService {
       const [firstName, ...rest] = paymentData.name.trim().split(' ');
       const lastName = rest.join(' ');
 
-      // 1) Preferência (necessária para back_urls quando usar auto_return)
+      // 1) Preferência — sem auto_return e SEM additional_info (no SDK é string)
       const preferenceClient = new Preference(client);
       await preferenceClient.create({
         body: {
-          items,
+          /* eslint-disable @typescript-eslint/no-explicit-any */
+          items: prefItems as any,
           payer: {
             name: paymentData.name,
             email: paymentData.email,
@@ -93,22 +125,13 @@ export class MercadoPagoService {
               number: paymentData.cpf.replace(/\D/g, ''),
             },
           },
+          ...(backUrls ? { back_urls: backUrls } : {}),
+          ...(notificationUrl ? { notification_url: notificationUrl } : {}),
+          external_reference: externalReference,
           metadata: {
             buyer_email: paymentData.email,
             order_id: externalReference,
             customer_name: paymentData.name,
-          },
-          additional_info: {
-            items: items.map(i => ({
-              title: i.title,
-              quantity: i.quantity,
-              unit_price: i.unit_price,
-            })),
-            // **não** mande additional_info.payer.email (o MP rejeita)
-            payer: {
-              first_name: firstName || paymentData.name,
-              last_name: lastName || '',
-            },
           },
           payment_methods: {
             excluded_payment_types: [
@@ -118,14 +141,6 @@ export class MercadoPagoService {
             ],
             installments: 1,
           },
-          back_urls: {
-            success: `${baseUrl}/success`,
-            failure: `${baseUrl}/failure`,
-            pending: `${baseUrl}/pending`,
-          },
-          ...(notificationUrl ? { notification_url: notificationUrl } : {}),
-          auto_return: 'approved',
-          external_reference: externalReference,
           expires: true,
           expiration_date_from: new Date().toISOString(),
           expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -136,11 +151,11 @@ export class MercadoPagoService {
       const paymentClient = new Payment(client);
       const pixResponse = await paymentClient.create({
         body: {
-          transaction_amount: Number(paymentData.amount),
+          transaction_amount: amountNum,
           description: 'Produto Digital - Acesso completo ao conteúdo',
           payment_method_id: 'pix',
           payer: {
-            email: paymentData.email,
+            email: paymentData.email, // e-mail fica aqui (nível superior)
             first_name: firstName || paymentData.name,
             last_name: lastName || '',
             identification: {
@@ -155,23 +170,27 @@ export class MercadoPagoService {
             order_id: externalReference,
             customer_name: paymentData.name,
           },
+          // Aqui o SDK aceita objeto AdditionalInfo
           additional_info: {
-            items: items.map(i => ({
-              title: i.title,
-              quantity: i.quantity,
-              unit_price: i.unit_price,
-            })),
+            items: [
+              {
+                id: 'DIGITAL-1',
+                title: 'Produto Digital',
+                quantity: 1,
+                unit_price: amountNum,
+              },
+            ],
             payer: {
               first_name: firstName || paymentData.name,
               last_name: lastName || '',
             },
-          },
+          } as any,
         },
       });
 
       return {
         id: String(pixResponse.id),
-        status: pixResponse.status,
+        status: pixResponse.status || '',
         qr_code: pixResponse.point_of_interaction?.transaction_data?.qr_code || '',
         qr_code_base64:
           pixResponse.point_of_interaction?.transaction_data?.qr_code_base64 || '',
@@ -195,6 +214,7 @@ export class MercadoPagoService {
     payer: {
       email: string;
       identification: { type: 'CPF' | 'CNPJ'; number: string };
+      /** Opcional – usado para preencher nome no webhook/email */
       name?: string;
     };
   }) {
@@ -203,6 +223,7 @@ export class MercadoPagoService {
       console.log('[MP] notificationUrl (CARD):', notificationUrl);
 
       const externalRef = args.external_reference || `order_${Date.now()}`;
+      const amountNum = Number(args.amount);
 
       const fullName =
         (args.payer as any)?.name && String((args.payer as any).name).trim()
@@ -215,9 +236,10 @@ export class MercadoPagoService {
       const resp = await paymentClient.create({
         body: {
           token: args.token,
-          issuer_id: args.issuer_id,
+          // issuer_id deve ser number
+          issuer_id: args.issuer_id ? Number(args.issuer_id) : undefined,
           payment_method_id: args.payment_method_id,
-          transaction_amount: Number(args.amount),
+          transaction_amount: amountNum,
           installments: Number(args.installments || 1),
           description: args.description || 'Pagamento com cartão',
           external_reference: externalRef,
@@ -236,16 +258,13 @@ export class MercadoPagoService {
             ...(fullName ? { customer_name: fullName } : {}),
           },
           additional_info: {
-            payer: {
-              email: args.payer.email,
-              ...(fullName
-                ? {
-                    first_name: firstName || fullName,
-                    last_name: lastName || '',
-                  }
-                : {}),
-            },
-          },
+            payer: fullName
+              ? {
+                  first_name: firstName || fullName,
+                  last_name: lastName || '',
+                }
+              : {},
+          } as any,
         },
       });
 
@@ -260,14 +279,14 @@ export class MercadoPagoService {
     try {
       const paymentClient = new Payment(client);
       const response = await paymentClient.get({ id: paymentId });
-      return response.status;
+      return response.status || '';
     } catch (error) {
       console.error('Erro ao verificar status do pagamento:', error);
       throw new Error('Falha ao verificar status do pagamento');
     }
   }
 
-  /** Detalhes expandidos para o webhook */
+  /** Detalhes expandidos (inclui metadata/additional_info para o webhook) */
   async getPaymentDetails(paymentId: string): Promise<any> {
     try {
       const paymentClient = new Payment(client);

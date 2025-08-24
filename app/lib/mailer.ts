@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/mailer.ts
 import nodemailer from 'nodemailer';
 
