@@ -1,17 +1,88 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Header from '../components/Header';
+
+interface PaymentDetails {
+  id: string;
+  status: string;
+  status_detail?: string;
+  external_reference?: string;
+  transaction_amount?: number;
+  description?: string;
+}
 
 function SuccessInner() {
   const sp = useSearchParams();
   const router = useRouter();
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const paymentId = sp.get('paymentId') ?? '';
   const status = (sp.get('status') ?? '').toLowerCase();
   const ref = sp.get('ref') ?? '';
 
   const approved = status === 'approved';
+  const rejected = status === 'rejected';
+
+  // Buscar detalhes do pagamento quando a página carregar
+  useEffect(() => {
+    if (paymentId && !paymentDetails) {
+      setLoading(true);
+      fetch(`/api/payments/${paymentId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setPaymentDetails(data.data);
+          }
+        })
+        .catch(err => {
+          console.error('Erro ao buscar detalhes do pagamento:', err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [paymentId, paymentDetails]);
+
+  // Função para obter mensagem de erro baseada no status_detail
+  const getErrorMessage = (statusDetail?: string) => {
+    if (!statusDetail) return 'Pagamento recusado';
+    
+    switch (statusDetail) {
+      case 'cc_rejected_other_reason':
+        return 'Recusado por erro geral';
+      case 'cc_rejected_bad_filled_date':
+        return 'Data de validade incorreta';
+      case 'cc_rejected_bad_filled_other':
+        return 'Dados do cartão incorretos';
+      case 'cc_rejected_bad_filled_security_code':
+        return 'Código de segurança incorreto';
+      case 'cc_rejected_blacklist':
+        return 'Cartão bloqueado';
+      case 'cc_rejected_call_for_authorize':
+        return 'Autorização necessária';
+      case 'cc_rejected_card_disabled':
+        return 'Cartão desabilitado';
+      case 'cc_rejected_card_error':
+        return 'Erro no cartão';
+      case 'cc_rejected_duplicated_payment':
+        return 'Pagamento duplicado';
+      case 'cc_rejected_high_risk':
+        return 'Pagamento rejeitado por risco';
+      case 'cc_rejected_insufficient_amount':
+        return 'Saldo insuficiente';
+      case 'cc_rejected_invalid_installments':
+        return 'Parcelamento inválido';
+      case 'cc_rejected_max_attempts':
+        return 'Máximo de tentativas excedido';
+      case 'cc_rejected_other_reason':
+        return 'Recusado por erro geral';
+      default:
+        return `Pagamento recusado: ${statusDetail}`;
+    }
+  };
 
   // Pequena animação de "confete" (sem libs)
   useEffect(() => {
@@ -39,8 +110,26 @@ function SuccessInner() {
     return () => nodes.forEach(n => n.remove());
   }, [approved]);
 
+  if (loading) {
+    return (
+      <main style={{ maxWidth: 840, margin: '0 auto', padding: 24 }}>
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <div style={{ fontSize: '18px', color: '#6b7280' }}>Carregando detalhes do pagamento...</div>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main style={{ maxWidth: 840, margin: '0 auto', padding: 24 }}>
+    <main style={{ 
+      maxWidth: 840, 
+      margin: '0 auto', 
+      padding: 24,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      minHeight: 'calc(100vh - 200px)'
+    }}>
       <button
         onClick={() => router.push('/')}
         style={{
@@ -49,6 +138,7 @@ function SuccessInner() {
           padding: '6px 10px',
           borderRadius: 8,
           background: '#fff',
+          alignSelf: 'flex-start'
         }}
       >
         ← Voltar para a loja
@@ -64,6 +154,8 @@ function SuccessInner() {
             color: '#065f46',
             borderRadius: 16,
             padding: 28,
+            width: '100%',
+            maxWidth: 600
           }}
         >
           {/* Confete */}
@@ -99,7 +191,7 @@ function SuccessInner() {
             }
           `}</style>
 
-          <header style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <header style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
             <svg
               width="28"
               height="28"
@@ -116,7 +208,7 @@ function SuccessInner() {
                 strokeLinejoin="round"
               />
             </svg>
-            <div>
+            <div style={{ textAlign: 'center' }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>
                 Pagamento aprovado! 🎉
               </h1>
@@ -174,6 +266,7 @@ function SuccessInner() {
               flexWrap: 'wrap',
               gap: 10,
               marginTop: 18,
+              justifyContent: 'center'
             }}
           >
             <button
@@ -210,6 +303,91 @@ function SuccessInner() {
             </button>
           </div>
         </section>
+      ) : rejected ? (
+        <section
+          style={{
+            border: '1px solid #fecaca',
+            background: '#fef2f2',
+            borderRadius: 16,
+            padding: 28,
+            color: '#991b1b',
+            width: '100%',
+            maxWidth: 600
+          }}
+        >
+          <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, justifyContent: 'center' }}>
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <circle cx="12" cy="12" r="12" fill="#dc2626" />
+              <path
+                d="M15 9l-6 6m0-6l6 6"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <div style={{ textAlign: 'center' }}>
+              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>
+                Pagamento recusado
+              </h1>
+              <p style={{ margin: '4px 0 0', color: '#dc2626', fontSize: '16px' }}>
+                {getErrorMessage(paymentDetails?.status_detail)}
+              </p>
+            </div>
+          </header>
+
+          <div
+            style={{
+              display: 'grid',
+              gap: 12,
+              marginTop: 18,
+              background: '#ffffff',
+              border: '1px solid #fecaca',
+              borderRadius: 12,
+              padding: 16,
+              color: '#111827',
+            }}
+          >
+            <div>
+              <span style={{ fontSize: 12, color: '#6b7280' }}>Payment ID</span>
+              <div style={{ fontFamily: 'monospace', marginTop: '4px' }}>{paymentId || '—'}</div>
+            </div>
+            <div>
+              <span style={{ fontSize: 12, color: '#6b7280' }}>Referência</span>
+              <div style={{ fontFamily: 'monospace', marginTop: '4px' }}>{ref || '—'}</div>
+            </div>
+            {paymentDetails?.status_detail && (
+              <div>
+                <span style={{ fontSize: 12, color: '#6b7280' }}>Detalhes do erro</span>
+                <div style={{ fontFamily: 'monospace', marginTop: '4px', color: '#dc2626' }}>
+                  {paymentDetails.status_detail}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: 18, textAlign: 'center' }}>
+            <button
+              onClick={() => router.push('/')}
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                border: '1px solid #dc2626',
+                background: '#dc2626',
+                color: '#fff',
+                fontWeight: 600,
+              }}
+            >
+              Voltar para a loja
+            </button>
+          </div>
+        </section>
       ) : (
         <section
           style={{
@@ -217,6 +395,9 @@ function SuccessInner() {
             background: '#fff',
             borderRadius: 16,
             padding: 28,
+            width: '100%',
+            maxWidth: 600,
+            textAlign: 'center'
           }}
         >
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>
@@ -269,8 +450,20 @@ function SuccessInner() {
 
 export default function SuccessPage() {
   return (
-    <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
-      <SuccessInner />
-    </Suspense>
+    <>
+      <Header />
+      <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
+        <SuccessInner />
+      </Suspense>
+      <footer style={{ 
+        background: '#f3f4f6', 
+        padding: '20px', 
+        textAlign: 'center', 
+        borderTop: '1px solid #e5e7eb',
+        marginTop: '40px'
+      }}>
+        <p>&copy; 2025 ShopMaster. Todos os direitos reservados.</p>
+      </footer>
+    </>
   );
 }

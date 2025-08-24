@@ -3,6 +3,8 @@
 import Script from 'next/script';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import Header from '../components/Header';
 
 declare global {
   interface Window {
@@ -93,12 +95,25 @@ function CreditCardCheckoutInner() {
                 throw new Error(data?.error || 'Falha ao processar pagamento');
               }
 
-              // ✅ sem alert — redireciona pra página de sucesso
-              router.replace(
-                `/success?paymentId=${encodeURIComponent(data.id)}&status=${encodeURIComponent(
-                  data.status || ''
-                )}&ref=${encodeURIComponent(data.external_reference || '')}`
-              );
+              // ✅ Mostra toast de sucesso antes de redirecionar
+              toast.success('🎉 Pagamento confirmado com sucesso!', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined
+              });
+
+              // Aguarda um pouco para o usuário ver o toast antes de redirecionar
+              setTimeout(() => {
+                router.replace(
+                  `/success?paymentId=${encodeURIComponent(data.id)}&status=${encodeURIComponent(
+                    data.status || ''
+                  )}&ref=${encodeURIComponent(data.external_reference || '')}`
+                );
+              }, 1500);
             } catch (e) {
               const msg = e instanceof Error ? e.message : 'Erro ao enviar pagamento';
               setError(msg);
@@ -128,8 +143,52 @@ function CreditCardCheckoutInner() {
 
   const canCreateBrick = sdkReady && cpfDigits.length === 11;
 
+  // Efeito para centralizar o botão "Pagar" do Mercado Pago
+  useEffect(() => {
+    if (!canCreateBrick) return;
+    
+    // Aguarda um pouco para o SDK renderizar o formulário
+    const timer = setTimeout(() => {
+      const container = document.getElementById(containerId);
+      if (container) {
+        // Aplica estilos para centralizar o botão
+        const style = document.createElement('style');
+        style.textContent = `
+          #${containerId} .mp-button,
+          #${containerId} .mp-button-container,
+          #${containerId} .mp-button-primary,
+          #${containerId} button[type="submit"],
+          #${containerId} .mp-brick-button {
+            display: block !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            max-width: 300px !important;
+            text-align: center !important;
+          }
+          
+          #${containerId} .mp-button-container {
+            display: flex !important;
+            justify-content: center !important;
+            width: 100% !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [canCreateBrick, containerId]);
+
   return (
-    <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
+    <main style={{ 
+      maxWidth: 920, 
+      margin: '0 auto', 
+      padding: 24,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      minHeight: 'calc(100vh - 200px)'
+    }}>
       <Script
         src="https://sdk.mercadopago.com/js/v2"
         strategy="afterInteractive"
@@ -145,19 +204,20 @@ function CreditCardCheckoutInner() {
           padding: '6px 10px',
           borderRadius: 8,
           background: '#fff',
+          alignSelf: 'flex-start'
         }}
       >
         ← Voltar
       </button>
 
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>
         Pagamento com Cartão
       </h1>
-      <p style={{ color: '#6b7280', marginBottom: 16 }}>
+      <p style={{ color: '#6b7280', marginBottom: 16, textAlign: 'center' }}>
         Total: <strong>R$ {amount.toFixed(2).replace('.', ',')}</strong>
       </p>
 
-      <div style={{ display: 'grid', gap: 12, maxWidth: 520, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gap: 12, maxWidth: 520, marginBottom: 16, width: '100%' }}>
         <label style={{ display: 'grid', gap: 6 }}>
           <span>CPF do titular</span>
           <input
@@ -168,11 +228,6 @@ function CreditCardCheckoutInner() {
             disabled={submitting}
           />
         </label>
-
-        <div style={{ fontSize: 12, color: '#6b7280' }}>
-          SDK: {sdkReady ? 'carregado' : 'carregando'} • Chave pública:{' '}
-          {PUBLIC_KEY ? `${PUBLIC_KEY.slice(0, 6)}…${PUBLIC_KEY.slice(-4)}` : '—'}
-        </div>
 
         {error && (
           <div
@@ -190,22 +245,46 @@ function CreditCardCheckoutInner() {
       </div>
 
       {!canCreateBrick ? (
-        <div style={{ border: '1px dashed #e5e7eb', padding: 16, borderRadius: 8 }}>
+        <div style={{ 
+          border: '1px dashed #e5e7eb', 
+          padding: 16, 
+          borderRadius: 8,
+          textAlign: 'center',
+          maxWidth: 520,
+          width: '100%'
+        }}>
           Informe um CPF válido para carregar o formulário do cartão.
         </div>
       ) : (
-        <div id={containerId} style={{ minHeight: 320, opacity: submitting ? 0.6 : 1 }} />
+        <div id={containerId} style={{ 
+          minHeight: 320, 
+          opacity: submitting ? 0.6 : 1,
+          width: '100%',
+          maxWidth: 520
+        }} />
       )}
 
-      {submitting && <p style={{ marginTop: 12 }}>Enviando pagamento…</p>}
+      {submitting && <p style={{ marginTop: 12, textAlign: 'center' }}>Enviando pagamento…</p>}
     </main>
   );
 }
 
 export default function CreditCardCheckoutPage() {
   return (
-    <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
-      <CreditCardCheckoutInner />
-    </Suspense>
+    <>
+      <Header />
+      <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
+        <CreditCardCheckoutInner />
+      </Suspense>
+      <footer style={{ 
+        background: '#f3f4f6', 
+        padding: '20px', 
+        textAlign: 'center', 
+        borderTop: '1px solid #e5e7eb',
+        marginTop: '40px'
+      }}>
+        <p>&copy; 2025 ShopMaster. Todos os direitos reservados.</p>
+      </footer>
+    </>
   );
 }

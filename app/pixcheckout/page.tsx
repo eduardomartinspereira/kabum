@@ -3,6 +3,8 @@
 
 import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import Header from '../components/Header';
 
 type PixResp = {
   id: string;
@@ -14,15 +16,27 @@ type PixResp = {
 
 export default function PixCheckoutPage() {
   return (
-    <Suspense
-      fallback={
-        <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
-          <p>Carregando dados do checkout…</p>
-        </main>
-      }
-    >
-      <PixCheckoutInner />
-    </Suspense>
+    <>
+      <Header />
+      <Suspense
+        fallback={
+          <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
+            <p>Carregando dados do checkout…</p>
+          </main>
+        }
+      >
+        <PixCheckoutInner />
+      </Suspense>
+      <footer style={{ 
+        background: '#f3f4f6', 
+        padding: '20px', 
+        textAlign: 'center', 
+        borderTop: '1px solid #e5e7eb',
+        marginTop: '40px'
+      }}>
+        <p>&copy; 2025 ShopMaster. Todos os direitos reservados.</p>
+      </footer>
+    </>
   );
 }
 
@@ -63,6 +77,14 @@ function PixCheckoutInner() {
         throw new Error(json?.error || 'Falha (200) ao gerar PIX');
       }
       setPix(json.data as PixResp);
+      toast.success('📱 PIX gerado com sucesso! Escaneie o QR Code ou copie o código.', {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erro ao gerar PIX';
       setErr(msg);
@@ -72,21 +94,40 @@ function PixCheckoutInner() {
   }
 
   return (
-    <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
+    <main style={{ 
+      maxWidth: 920, 
+      margin: '0 auto', 
+      padding: 24,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      minHeight: 'calc(100vh - 200px)'
+    }}>
       <button
         onClick={() => router.back()}
-        style={{ marginBottom: 16, border: '1px solid #e5e7eb', padding: '6px 10px', borderRadius: 8 }}
+        style={{ 
+          marginBottom: 16, 
+          border: '1px solid #e5e7eb', 
+          padding: '6px 10px', 
+          borderRadius: 8,
+          alignSelf: 'flex-start'
+        }}
       >
         ← Voltar
       </button>
 
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Pagamento via PIX</h1>
-      <p style={{ color: '#6b7280', marginBottom: 16 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>Pagamento via PIX</h1>
+      <p style={{ color: '#6b7280', marginBottom: 16, textAlign: 'center' }}>
         Total: <strong>R$ {amount.toFixed(2).replace('.', ',')}</strong>
       </p>
 
       {!pix && (
-        <form onSubmit={gerarPix} style={{ display: 'grid', gap: 12, maxWidth: 520 }}>
+        <form onSubmit={gerarPix} style={{ 
+          display: 'grid', 
+          gap: 12, 
+          maxWidth: 520,
+          width: '100%'
+        }}>
           <label style={{ display: 'grid', gap: 6 }}>
             <span>Nome completo</span>
             <input
@@ -145,13 +186,20 @@ function PixCheckoutInner() {
       )}
 
       {pix && (
-        <section style={{ marginTop: 24, display: 'grid', gap: 12 }}>
+        <section style={{ 
+          marginTop: 24, 
+          display: 'grid', 
+          gap: 12,
+          maxWidth: 520,
+          width: '100%',
+          textAlign: 'center'
+        }}>
           <h2 style={{ fontSize: 18, fontWeight: 700 }}>QR Code</h2>
           {pix.qr_code_base64 ? (
             <img
               src={`data:image/png;base64,${pix.qr_code_base64}`}
               alt="QR Code PIX"
-              style={{ width: 260, height: 260, border: '1px solid #e5e7eb', borderRadius: 8 }}
+              style={{ width: 260, height: 260, border: '1px solid #e5e7eb', borderRadius: 8, margin: '0 auto' }}
             />
           ) : (
             <p>Copie o código abaixo no seu app do banco.</p>
@@ -166,7 +214,7 @@ function PixCheckoutInner() {
           </label>
           <button
             onClick={() => navigator.clipboard.writeText(pix.qr_code || '')}
-            style={{ border: '1px solid #e5e7eb', padding: '10px 12px', borderRadius: 8, width: 200 }}
+            style={{ border: '1px solid #e5e7eb', padding: '10px 12px', borderRadius: 8, width: 200, margin: '0 auto' }}
           >
             Copiar código
           </button>
