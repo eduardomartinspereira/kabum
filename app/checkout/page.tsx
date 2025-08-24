@@ -63,7 +63,10 @@ function CheckoutInner() {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/products/${productId}`, { signal: abort.signal });
+        const res = await fetch(`/api/products/${productId}`, {
+          signal: abort.signal,
+          cache: 'no-store',
+        });
         if (!res.ok) {
           setProduct(null);
           setVariation(null);
@@ -112,9 +115,9 @@ function CheckoutInner() {
 
   // Redireciona para a rota escolhida levando os dados necessários
   const goToPayment = (path: string) => {
-    const name = encodeURIComponent(session?.user?.name ?? 'Cliente');
-    const email = encodeURIComponent(session?.user?.email ?? '');
-    const amount = Number(total.toFixed(2)); // garante número com 2 casas
+    const name = session?.user?.name ?? 'Cliente';  // <- sem encodeURIComponent
+    const email = session?.user?.email ?? '';       // <- sem encodeURIComponent
+    const amount = Number(total.toFixed(2));        // garante número
 
     const qs = new URLSearchParams({
       amount: String(amount),
@@ -366,9 +369,15 @@ function CheckoutInner() {
 }
 
 export default function CheckoutPage() {
-  // ✅ Envolve quem usa useSearchParams com Suspense para evitar o erro de CSR bailout
   return (
-    <Suspense fallback={<div className={styles.loadingContainer}><div className={styles.loadingSpinner} />Carregando…</div>}>
+    <Suspense
+      fallback={
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSpinner} />
+          Carregando…
+        </div>
+      }
+    >
       <CheckoutInner />
     </Suspense>
   );
