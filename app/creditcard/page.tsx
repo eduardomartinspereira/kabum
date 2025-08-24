@@ -2,7 +2,7 @@
 
 import Script from 'next/script';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams, useRouter } from 'ngext/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
