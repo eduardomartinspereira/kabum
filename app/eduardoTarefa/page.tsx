@@ -1,12 +1,12 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import React from 'react';
-import { authOptions } from '../api/auth/[...nextauth]/route';
 import LogoutButton from '../components/LogoutButton';
 
 //import { prisma } from '../lib/prisma';
 
 import styles from './dashboard.module.scss';
+import { authOptions } from '../lib/auth';
 
 function getInitials(nameOrEmail?: string | null) {
     if (!nameOrEmail) return 'U';

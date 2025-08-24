@@ -36,5 +36,16 @@
         "prisma": "^6.14.0",
         "tailwindcss": "^4",
         "typescript": "^5"
+    },
+    "scripts": {
+    "dev": "next dev --turbo",
+    "build": "prisma generate && next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "postinstall": "prisma generate"
     }
 }
+
+
+   
+

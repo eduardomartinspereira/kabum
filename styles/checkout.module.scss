@@ -1,16 +1,6 @@
 @use 'sass:color';
 
-:root {
-    --surface: #ffffff;
-    --text-strong: #111827;
-    --text-muted: #6b7280;
-    --border: #e5e7eb;
-    --primary: #0352f8;
-    --primary-hover: #2563eb;
-    --focus: rgba(59, 130, 246, 0.15);
-    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-        0 4px 6px -4px rgba(0, 0, 0, 0.1);
-}
+
 
 .container {
     min-height: 100vh;
