@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import React from 'react';
 import LogoutButton from '../components/logoutbutton';
 
-//import { prisma } from '../lib/prisma';
+
 
 import styles from '../../styles/dashboard.module.scss';
 import { authOptions } from '../lib/auth';
