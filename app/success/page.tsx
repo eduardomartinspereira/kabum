@@ -231,32 +231,41 @@ function SuccessInner() {
               color: '#111827',
             }}
           >
-            <div style={{ display: 'grid', gap: 4 }}>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>Payment ID</span>
-              <code
-                style={{
-                  fontSize: 14,
-                  background: '#f3f4f6',
-                  padding: '6px 8px',
-                  borderRadius: 8,
-                }}
-              >
-                {paymentId || '—'}
-              </code>
+            {/* Informações do Pedido */}
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#065f46' }}>
+                📦 Detalhes do Pedido
+              </h3>
             </div>
-
-            <div style={{ display: 'grid', gap: 4 }}>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>Referência</span>
-              <code
-                style={{
-                  fontSize: 14,
-                  background: '#f3f4f6',
-                  padding: '6px 8px',
-                  borderRadius: 8,
-                }}
-              >
-                {ref || '—'}
-              </code>
+            
+            <div style={{ 
+              display: 'grid', 
+              gap: 16, 
+              padding: '16px',
+              background: '#f9fafb',
+              borderRadius: 8,
+              border: '1px solid #e5e7eb'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 500, color: '#374151' }}>Produto:</span>
+                <span style={{ fontWeight: 600, color: '#111827' }}>
+                  {sp.get('productName') || 'Produto selecionado'}
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 500, color: '#374151' }}>Quantidade:</span>
+                <span style={{ fontWeight: 600, color: '#111827' }}>
+                  {sp.get('qty') || '1'} unidade(s)
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 500, color: '#374151' }}>Valor Total:</span>
+                <span style={{ fontWeight: 700, color: '#065f46', fontSize: '18px' }}>
+                  R$ {sp.get('amount') ? Number(sp.get('amount')).toFixed(2).replace('.', ',') : '0,00'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -281,25 +290,6 @@ function SuccessInner() {
               }}
             >
               Ir para a página inicial
-            </button>
-
-            <button
-              onClick={async () => {
-                await navigator.clipboard.writeText(
-                  `Pagamento aprovado\nID: ${paymentId}\nRef: ${ref}`
-                );
-                alert('Copiado!');
-              }}
-              style={{
-                padding: '10px 14px',
-                borderRadius: 10,
-                border: '1px solid #d1d5db',
-                background: '#fff',
-                color: '#065f46',
-                fontWeight: 600,
-              }}
-            >
-              Copiar detalhes
             </button>
           </div>
         </section>
@@ -354,19 +344,12 @@ function SuccessInner() {
               color: '#111827',
             }}
           >
-            <div>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>Payment ID</span>
-              <div style={{ fontFamily: 'monospace', marginTop: '4px' }}>{paymentId || '—'}</div>
-            </div>
-            <div>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>Referência</span>
-              <div style={{ fontFamily: 'monospace', marginTop: '4px' }}>{ref || '—'}</div>
-            </div>
+            {/* Informações técnicas removidas - cliente não deve ver Payment ID e Referência */}
             {paymentDetails?.status_detail && (
               <div>
                 <span style={{ fontSize: 12, color: '#6b7280' }}>Detalhes do erro</span>
                 <div style={{ fontFamily: 'monospace', marginTop: '4px', color: '#dc2626' }}>
-                  {paymentDetails.status_detail}
+                  {getErrorMessage(paymentDetails.status_detail)}
                 </div>
               </div>
             )}
@@ -418,14 +401,7 @@ function SuccessInner() {
               padding: 16,
             }}
           >
-            <div>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>Payment ID</span>
-              <div style={{ fontFamily: 'monospace' }}>{paymentId || '—'}</div>
-            </div>
-            <div>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>Referência</span>
-              <div style={{ fontFamily: 'monospace' }}>{ref || '—'}</div>
-            </div>
+            {/* Informações técnicas removidas - cliente não deve ver Payment ID e Referência */}
           </div>
 
           <div style={{ marginTop: 18 }}>

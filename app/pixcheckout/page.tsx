@@ -218,6 +218,36 @@ function PixCheckoutInner() {
           >
             Copiar código
           </button>
+          
+          {/* Informações do pedido */}
+          <div style={{ 
+            marginTop: 20,
+            padding: '16px',
+            background: '#f9fafb',
+            borderRadius: 8,
+            border: '1px solid #e5e7eb',
+            textAlign: 'left'
+          }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 600, color: '#374151' }}>
+              📦 Resumo do Pedido
+            </h3>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#6b7280' }}>Produto:</span>
+                <span style={{ fontWeight: 500 }}>{sp.get('productName') || 'Produto selecionado'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#6b7280' }}>Quantidade:</span>
+                <span style={{ fontWeight: 500 }}>{sp.get('qty') || '1'} unidade(s)</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#6b7280' }}>Total:</span>
+                <span style={{ fontWeight: 700, color: '#065f46' }}>
+                  R$ {amount.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+            </div>
+          </div>
         </section>
       )}
     </main>

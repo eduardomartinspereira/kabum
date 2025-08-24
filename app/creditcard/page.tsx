@@ -33,6 +33,8 @@ function CreditCardCheckoutInner() {
   const [sdkReady, setSdkReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [paymentData, setPaymentData] = useState<any>(null);
 
   const PUBLIC_KEY = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
   const containerId = 'cardBrickContainer';
@@ -95,7 +97,11 @@ function CreditCardCheckoutInner() {
                 throw new Error(data?.error || 'Falha ao processar pagamento');
               }
 
-              // ✅ Mostra toast de sucesso antes de redirecionar
+              // ✅ Mostra popup de sucesso
+              setPaymentData(data);
+              setShowSuccessPopup(true);
+              
+              // Toast de confirmação
               toast.success('🎉 Pagamento confirmado com sucesso!', {
                 position: "top-right",
                 autoClose: 3000,
@@ -105,15 +111,6 @@ function CreditCardCheckoutInner() {
                 draggable: true,
                 progress: undefined
               });
-
-              // Aguarda um pouco para o usuário ver o toast antes de redirecionar
-              setTimeout(() => {
-                router.replace(
-                  `/success?paymentId=${encodeURIComponent(data.id)}&status=${encodeURIComponent(
-                    data.status || ''
-                  )}&ref=${encodeURIComponent(data.external_reference || '')}`
-                );
-              }, 1500);
             } catch (e) {
               const msg = e instanceof Error ? e.message : 'Erro ao enviar pagamento';
               setError(msg);
@@ -265,6 +262,161 @@ function CreditCardCheckoutInner() {
       )}
 
       {submitting && <p style={{ marginTop: 12, textAlign: 'center' }}>Enviando pagamento…</p>}
+
+      {/* Popup de Confirmação de Pagamento */}
+      {showSuccessPopup && paymentData && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '500px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            {/* Ícone de Sucesso */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              background: '#10b981',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px auto'
+            }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+
+            {/* Título */}
+            <h2 style={{
+              fontSize: '28px',
+              fontWeight: '800',
+              color: '#065f46',
+              margin: '0 0 16px 0'
+            }}>
+              🎉 Pagamento Aprovado!
+            </h2>
+
+            {/* Mensagem */}
+            <p style={{
+              fontSize: '16px',
+              color: '#6b7280',
+              margin: '0 0 24px 0',
+              lineHeight: '1.5'
+            }}>
+              Seu pagamento foi confirmado com sucesso! Você receberá um e-mail de confirmação em instantes.
+            </p>
+
+            {/* Detalhes do Pagamento */}
+            <div style={{
+              background: '#f9fafb',
+              borderRadius: '12px',
+              padding: '20px',
+              margin: '0 0 24px 0',
+              border: '1px solid #e5e7eb'
+            }}>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>VALOR PAGO:</span>
+                  <span style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+                    R$ {amount.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Botões */}
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <button
+                onClick={() => {
+                  const productId = sp.get('productId') || '';
+                  const variationId = sp.get('variationId') || '';
+                  const qty = sp.get('qty') || '1';
+                  const productName = sp.get('productName') || 'Produto selecionado';
+                  
+                  router.replace(
+                    `/success?paymentId=${encodeURIComponent(paymentData.id)}&status=${encodeURIComponent(
+                      paymentData.status || ''
+                    )}&ref=${encodeURIComponent(paymentData.external_reference || '')}&productId=${productId}&variationId=${variationId}&qty=${qty}&productName=${encodeURIComponent(productName)}&amount=${amount}`
+                  );
+                }}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: '#10b981',
+                  color: '#fff',
+                  fontWeight: '700',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#059669'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#10b981'}
+              >
+                Continuar Comprando
+              </button>
+              
+              <button
+                onClick={() => {
+                  const productId = sp.get('productId') || '';
+                  const variationId = sp.get('variationId') || '';
+                  const qty = sp.get('qty') || '1';
+                  const productName = sp.get('productName') || 'Produto selecionado';
+                  
+                  router.replace(
+                    `/success?paymentId=${encodeURIComponent(paymentData.id)}&status=${encodeURIComponent(
+                      paymentData.status || ''
+                    )}&ref=${encodeURIComponent(paymentData.external_reference || '')}&productId=${productId}&variationId=${variationId}&qty=${qty}&productName=${encodeURIComponent(productName)}&amount=${amount}`
+                  );
+                }}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '10px',
+                  border: '1px solid #e5e7eb',
+                  background: '#fff',
+                  color: '#374151',
+                  fontWeight: '600',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#fff';
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                }}
+              >
+                Ver Detalhes Completos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

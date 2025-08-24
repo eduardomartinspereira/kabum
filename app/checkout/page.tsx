@@ -126,6 +126,7 @@ function CheckoutInner() {
       productId: String(productId ?? ''),
       variationId: String(variationId ?? ''),
       qty: String(quantity),
+      productName: product?.name || 'Produto selecionado',
     }).toString();
 
     router.push(`${path}?${qs}`);
