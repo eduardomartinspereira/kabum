@@ -1,3 +1,4 @@
+// app/pix-checkout/page.tsx
 'use client';
 
 import { Suspense, useMemo, useState } from 'react';
@@ -11,11 +12,25 @@ type PixResp = {
   external_reference: string;
 };
 
+export default function PixCheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
+          <p>Carregando dados do checkout…</p>
+        </main>
+      }
+    >
+      <PixCheckoutInner />
+    </Suspense>
+  );
+}
+
 function PixCheckoutInner() {
   const sp = useSearchParams();
   const router = useRouter();
 
-  // lidos do checkout
+  // valores vindos do checkout
   const amount = useMemo(() => Number(sp.get('amount') || 0), [sp]);
   const nameDefault = decodeURIComponent(sp.get('name') || 'Cliente');
   const emailDefault = decodeURIComponent(sp.get('email') || '');
@@ -27,13 +42,13 @@ function PixCheckoutInner() {
   const [pix, setPix] = useState<PixResp | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  async function gerarPix(e: React.FormEvent<HTMLFormElement>) {
+  async function gerarPix(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
     setPix(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/pix-payment', {
+      const res = await fetch('/api/pixpayment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -48,7 +63,7 @@ function PixCheckoutInner() {
         throw new Error(json?.error || 'Falha (200) ao gerar PIX');
       }
       setPix(json.data as PixResp);
-    } catch (e) {
+    } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erro ao gerar PIX';
       setErr(msg);
     } finally {
@@ -79,7 +94,6 @@ function PixCheckoutInner() {
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="Seu nome"
-              className="input"
               style={{ border: '1px solid #e5e7eb', padding: 10, borderRadius: 8 }}
             />
           </label>
@@ -159,14 +173,5 @@ function PixCheckoutInner() {
         </section>
       )}
     </main>
-  );
-}
-
-export default function PixCheckoutPage() {
-  // ✅ Envolve quem usa useSearchParams com Suspense para evitar o erro de CSR bailout
-  return (
-    <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
-      <PixCheckoutInner />
-    </Suspense>
   );
 }

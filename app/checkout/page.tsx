@@ -316,7 +316,7 @@ function CheckoutInner() {
 
             <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
               <button
-                onClick={() => goToPayment('/pix-checkout')}
+                onClick={() => goToPayment('/pixcheckout')}
                 style={{
                   padding: '12px 16px',
                   borderRadius: 10,
@@ -330,7 +330,7 @@ function CheckoutInner() {
               </button>
 
               <button
-                onClick={() => goToPayment('/credit-card')}
+                onClick={() => goToPayment('/creditcard')}
                 style={{
                   padding: '12px 16px',
                   borderRadius: 10,

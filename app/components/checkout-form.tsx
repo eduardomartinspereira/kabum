@@ -24,7 +24,7 @@ export function CheckoutForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/pix-payment', {
+      const res = await fetch('/api/pixpayment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, cpf, amount: 2.0 }),
@@ -175,7 +175,7 @@ export function CheckoutForm() {
             </p>
             <button
               className="w-full rounded bg-black text-white px-3 py-2"
-              onClick={() => (window.location.href = '/credit-card')}
+              onClick={() => (window.location.href = '/creditcard')}
             >
               Ir para Cartão
             </button>
