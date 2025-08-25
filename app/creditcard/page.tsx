@@ -425,9 +425,9 @@ export default function CreditCardCheckoutPage() {
   return (
     <>
       <Header />
-      <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
-        <CreditCardCheckoutInner />
-      </Suspense>
+    <Suspense fallback={<main style={{ padding: 24 }}>Carregando…</main>}>
+      <CreditCardCheckoutInner />
+    </Suspense>
       <footer style={{ 
         background: '#f3f4f6', 
         padding: '20px', 

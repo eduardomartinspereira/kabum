@@ -8,7 +8,37 @@ async function main() {
   await prisma.productVariation.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
   await prisma.user.deleteMany();
+
+  // Criar categorias
+  const eletronicos = await prisma.category.create({
+    data: {
+      name: 'Eletrônicos',
+      description: 'Produtos eletrônicos em geral'
+    }
+  });
+
+  const celulares = await prisma.category.create({
+    data: {
+      name: 'Celulares',
+      description: 'Smartphones e acessórios'
+    }
+  });
+
+  const computadores = await prisma.category.create({
+    data: {
+      name: 'Computadores',
+      description: 'Notebooks, desktops e acessórios'
+    }
+  });
+
+  const games = await prisma.category.create({
+    data: {
+      name: 'Games',
+      description: 'Consoles, jogos e acessórios gamer'
+    }
+  });
 
   // Criar usuário
   const user = await prisma.user.create({
@@ -27,7 +57,7 @@ async function main() {
       name: 'Smartphone Galaxy Pro',
       description: 'Smartphone de última geração com câmera de 108MP, tela AMOLED 6.7" e processador Snapdragon 8 Gen 2.',
       brand: 'Samsung',
-      category: 'Eletrônicos',
+      categoryId: celulares.id,
       basePrice: 2999.00,
       variations: [
         {
@@ -52,7 +82,7 @@ async function main() {
       name: 'Notebook Ultra Slim',
       description: 'Notebook ultra fino com tela de 14" Full HD, processador Intel i7, 16GB RAM e SSD de 512GB.',
       brand: 'Dell',
-      category: 'Eletrônicos',
+      categoryId: computadores.id,
       basePrice: 4599.00,
       variations: [
         {
@@ -77,7 +107,7 @@ async function main() {
       name: 'Fone de Ouvido Wireless Pro',
       description: 'Fone de ouvido com cancelamento de ruído ativo, bateria de 30h e qualidade de áudio premium.',
       brand: 'Sony',
-      category: 'Eletrônicos',
+      categoryId: eletronicos.id,
       basePrice: 899.00,
       variations: [
         {
@@ -102,7 +132,7 @@ async function main() {
       name: 'Smart TV 4K 55"',
       description: 'Smart TV com resolução 4K, HDR, Android TV e controle por voz integrado.',
       brand: 'LG',
-      category: 'Eletrônicos',
+      categoryId: eletronicos.id,
       basePrice: 2499.00,
       variations: [
         {
@@ -127,7 +157,7 @@ async function main() {
       name: 'Câmera DSLR Profissional',
       description: 'Câmera DSLR com sensor full-frame, 45MP e gravação de vídeo 8K.',
       brand: 'Canon',
-      category: 'Eletrônicos',
+      categoryId: eletronicos.id,
       basePrice: 8999.00,
       variations: [
         {
@@ -152,7 +182,7 @@ async function main() {
       name: 'Tablet iPad Air',
       description: 'Tablet com tela de 10.9", chip M1, câmera traseira de 12MP e suporte à Apple Pencil.',
       brand: 'Apple',
-      category: 'Eletrônicos',
+      categoryId: eletronicos.id,
       basePrice: 3999.00,
       variations: [
         {
@@ -177,7 +207,7 @@ async function main() {
       name: 'Console de Videogame',
       description: 'Console de nova geração com SSD ultra-rápido, ray tracing e compatibilidade com jogos 4K.',
       brand: 'Sony',
-      category: 'Eletrônicos',
+      categoryId: eletronicos.id,
       basePrice: 3499.00,
       variations: [
         {
@@ -202,7 +232,7 @@ async function main() {
       name: 'Smartwatch Fitness',
       description: 'Smartwatch com monitor cardíaco, GPS integrado, resistente à água e bateria de 7 dias.',
       brand: 'Garmin',
-      category: 'Eletrônicos',
+      categoryId: eletronicos.id,
       basePrice: 1299.00,
       variations: [
         {
@@ -227,7 +257,7 @@ async function main() {
       name: 'Drone Profissional',
       description: 'Drone com câmera 4K, estabilização de 3 eixos, alcance de 7km e bateria de 30 minutos.',
       brand: 'DJI',
-      category: 'Eletrônicos',
+      categoryId: eletronicos.id,
       basePrice: 5999.00,
       variations: [
         {

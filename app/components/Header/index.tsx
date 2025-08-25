@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from '../../styles/header.module.scss';
+import styles from '../../../styles/header.module.scss';
 
 export default function Header() {
   const { data: session, status } = useSession();

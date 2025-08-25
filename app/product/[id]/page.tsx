@@ -26,7 +26,25 @@ export default function ProductPage() {
           if (response.ok) {
             const productData = await response.json();
             setProduct(productData);
-            setSelectedVariation(productData.variations[0]);
+            
+            // Se tem variações, selecionar a primeira
+            if (productData.variations && productData.variations.length > 0) {
+              setSelectedVariation(productData.variations[0]);
+            } else {
+              // Se não tem variações, criar uma variação virtual baseada no produto
+              const virtualVariation = {
+                id: `virtual-${productData.id}`,
+                productId: productData.id,
+                size: 'Padrão',
+                color: 'Padrão',
+                material: 'Padrão',
+                price: productData.basePrice,
+                stock: 10, // Assumir estoque disponível
+                sku: `${productData.id}-default`,
+                isActive: true
+              };
+              setSelectedVariation(virtualVariation);
+            }
           } else {
             toast.error('Produto não encontrado');
             router.push('/');
@@ -43,15 +61,47 @@ export default function ProductPage() {
     }
   }, [productId, router]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!session) {
       // Redirecionar para home com produto selecionado
       router.push(`/?selectedProduct=${productId}&selectedVariation=${selectedVariation?.id}`);
       return;
     }
 
+    let variationId = selectedVariation?.id;
+    
+    // Se for uma variação virtual (produto sem variações), criar uma variação real
+    if (selectedVariation?.id?.toString().startsWith('virtual-')) {
+      try {
+        const response = await fetch('/api/create-variation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: productId,
+            size: 'Padrão',
+            color: 'Padrão',
+            material: 'Padrão',
+            price: product.basePrice,
+            stock: 10,
+            sku: `${productId}-default-${Date.now()}`
+          })
+        });
+        
+        if (response.ok) {
+          const newVariation = await response.json();
+          variationId = newVariation.id;
+        } else {
+          toast.error('Erro ao preparar produto para compra');
+          return;
+        }
+      } catch (error) {
+        toast.error('Erro ao preparar produto para compra');
+        return;
+      }
+    }
+
     // Se já estiver logado, ir direto para checkout
-    router.push(`/checkout?productId=${productId}&variationId=${selectedVariation?.id}`);
+    router.push(`/checkout?productId=${productId}&variationId=${variationId}`);
   };
 
   if (loading) {
@@ -96,8 +146,8 @@ export default function ProductPage() {
               />
             ) : (
               <span className={styles.productIcon}>
-                {product.category === 'Eletrônicos' ? '📱' : 
-                 product.category === 'Calçados' ? '👟' : '🛍️'}
+                                  {(typeof product.category === 'string' ? product.category : product.category?.name) === 'Eletrônicos' ? '📱' :
+                   (typeof product.category === 'string' ? product.category : product.category?.name) === 'Calçados' ? '👟' : '🛍️'}
               </span>
             )}
           </div>
@@ -108,33 +158,42 @@ export default function ProductPage() {
             
             <div className={styles.productMeta}>
               <span className={styles.brand}>Marca: {product.brand}</span>
-              <span className={styles.category}>Categoria: {product.category}</span>
+              <span className={styles.category}>
+              Categoria: {typeof product.category === 'string' ? product.category : product.category?.name || 'Geral'}
+            </span>
             </div>
 
-            <div className={styles.variationsSection}>
-              <h2>Variações Disponíveis:</h2>
-              <div className={styles.variationsGrid}>
-                {product.variations.map((variation: any) => (
-                  <div 
-                    key={variation.id}
-                    className={`${styles.variationCard} ${selectedVariation?.id === variation.id ? styles.selectedVariation : ''}`}
-                    onClick={() => setSelectedVariation(variation)}
-                  >
-                    <div className={styles.variationInfo}>
-                      <span className={styles.variationSize}>{variation.size}</span>
-                      <span className={styles.variationColor}>{variation.color}</span>
-                      <span className={styles.variationMaterial}>{variation.material}</span>
+            {product.variations && product.variations.length > 0 ? (
+              <div className={styles.variationsSection}>
+                <h2>Variações Disponíveis:</h2>
+                <div className={styles.variationsGrid}>
+                  {product.variations.map((variation: any) => (
+                    <div 
+                      key={variation.id}
+                      className={`${styles.variationCard} ${selectedVariation?.id === variation.id ? styles.selectedVariation : ''}`}
+                      onClick={() => setSelectedVariation(variation)}
+                    >
+                      <div className={styles.variationInfo}>
+                        <span className={styles.variationSize}>{variation.size}</span>
+                        <span className={styles.variationColor}>{variation.color}</span>
+                        <span className={styles.variationMaterial}>{variation.material}</span>
+                      </div>
+                      <div className={styles.variationPrice}>
+                        R$ {parseFloat(variation.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                      <div className={styles.variationStock}>
+                        Estoque: {variation.stock} unidades
+                      </div>
                     </div>
-                    <div className={styles.variationPrice}>
-                      R$ {parseFloat(variation.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </div>
-                    <div className={styles.variationStock}>
-                      Estoque: {variation.stock} unidades
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className={styles.noVariationsSection}>
+                <h2>Produto Único:</h2>
+                <p>Este produto não possui variações. Você pode comprá-lo diretamente.</p>
+              </div>
+            )}
 
             {selectedVariation && (
               <div className={styles.selectedVariationInfo}>
@@ -154,6 +213,28 @@ export default function ProductPage() {
                   disabled={selectedVariation.stock === 0}
                 >
                   {selectedVariation.stock === 0 ? 'Produto Indisponível' : 'Adicionar ao Carrinho'}
+                </button>
+              </div>
+            )}
+
+            {/* Para produtos sem variações, sempre mostrar o botão se não há selectedVariation ainda */}
+            {!selectedVariation && product && (!product.variations || product.variations.length === 0) && (
+              <div className={styles.selectedVariationInfo}>
+                <div className={styles.priceSection}>
+                  <span className={styles.priceLabel}>Preço:</span>
+                  <span className={styles.priceValue}>
+                    R$ {parseFloat(product.basePrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className={styles.installments}>
+                  ou 10x de R$ {(parseFloat(product.basePrice) / 10).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+                
+                <button 
+                  onClick={handleAddToCart}
+                  className={styles.addToCartButton}
+                >
+                  Adicionar ao Carrinho
                 </button>
               </div>
             )}

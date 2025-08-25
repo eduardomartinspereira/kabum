@@ -22,7 +22,7 @@ export default function ProductShowcase() {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<{ productId?: number; variationId?: number } | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<{ productId?: number; variationId?: number | string } | null>(null);
 
   // Estado do carrossel
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -180,7 +180,9 @@ export default function ProductShowcase() {
     if (selectedProductId && selectedVariationId) {
       setSelectedProduct({
         productId: parseInt(selectedProductId),
-        variationId: parseInt(selectedVariationId),
+        variationId: selectedVariationId.startsWith('virtual-') 
+          ? selectedVariationId 
+          : parseInt(selectedVariationId),
       });
       setShowLoginPopup(true);
 
@@ -235,20 +237,32 @@ export default function ProductShowcase() {
           ) : (
             <div className={styles.productsGrid}>
               {products.map((product) => {
-                // === NOVO BLOCO: preço base sem price range ===
+                // === HELPER FUNCTIONS ===
+                const getCategoryName = (category: any) => {
+                  return typeof category === 'string' ? category : category?.name || 'Geral';
+                };
+
+                // === CÁLCULO DE PREÇO MELHORADO ===
                 const variationPrices: number[] = (product?.variations ?? [])
                   .map((v: any) => Number(v.price))
-                  .filter((n: number) => Number.isFinite(n) && n >= 0);
+                  .filter((n: number) => Number.isFinite(n) && n > 0);
 
-                const basePrice: number =
-                  variationPrices.length
-                    ? Math.min(...variationPrices)
-                    : Number(product?.price ?? 0);
+                // Usar variações se existirem, senão usar basePrice
+                let basePrice: number = 0;
+                if (variationPrices.length > 0) {
+                  basePrice = Math.min(...variationPrices);
+                } else if (product?.basePrice) {
+                  basePrice = Number(product.basePrice);
+                } else if (product?.price) {
+                  basePrice = Number(product.price);
+                }
 
                 const hasPrice = Number.isFinite(basePrice) && basePrice > 0;
                 const displayPrice = hasPrice
                   ? `R$ ${basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                   : 'Preço indisponível';
+                
+                const categoryName = getCategoryName(product.category);
                 // ==============================================
 
                 return (
@@ -262,8 +276,8 @@ export default function ProductShowcase() {
                         />
                       ) : (
                         <span className={styles.productIcon}>
-                          {product.category === 'Eletrônicos' ? '📱' :
-                           product.category === 'Calçados' ? '👟' : '🛍️'}
+                          {categoryName === 'Eletrônicos' ? '📱' :
+                           categoryName === 'Calçados' ? '👟' : '🛍️'}
                         </span>
                       )}
                     </div>
@@ -272,7 +286,7 @@ export default function ProductShowcase() {
                       <p className={styles.productDescription}>{product.description}</p>
                       <div className={styles.productMeta}>
                         <span className={styles.brand}>{product.brand}</span>
-                        <span className={styles.category}>{product.category}</span>
+                        <span className={styles.category}>{categoryName}</span>
                       </div>
                       <div className={styles.productPrice}>
                         <span className={styles.price}>{displayPrice}</span>
