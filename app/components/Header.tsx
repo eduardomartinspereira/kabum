@@ -1,8 +1,8 @@
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '../../styles/header.module.scss';
 
@@ -11,6 +11,11 @@ export default function Header() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [cep, setCep] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleLogout = () => {
     signOut({ callbackUrl: '/' });
@@ -27,6 +32,11 @@ export default function Header() {
     const value = e.target.value.replace(/\D/g, '').slice(0, 8);
     setCep(value);
   };
+
+  // Evita erro de hidratação renderizando apenas no cliente
+  if (!isClient) {
+    return <header className={styles.header}></header>;
+  }
 
   return (
     <header className={styles.header}>

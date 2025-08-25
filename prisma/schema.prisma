@@ -8,36 +8,39 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  cpf       String?  @unique
+  id        Int         @id @default(autoincrement())
+  email     String      @unique
+  cpf       String?     @unique
   password  String?
   firstName String?
   lastName  String?
   phone     String?
   role      Role
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @default(now()) @updatedAt
+  AccessLog AccessLog[]
 }
 
 model Product {
-  id          Int           @id @default(autoincrement())
+  id          Int                @id @default(autoincrement())
   name        String
   description String
-  basePrice   Decimal       @db.Decimal(10, 2)
-  category    String
+  basePrice   Decimal            @db.Decimal(10, 2)
   brand       String?
-  isActive    Boolean       @default(true)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @default(now()) @updatedAt
+  categoryId  Int?
+  Category    Category?          @relation(fields: [categoryId], references: [id])
   images      ProductImage[]
   variations  ProductVariation[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now()) @updatedAt
+
+  @@index([categoryId], map: "Product_categoryId_fkey")
 }
 
 model ProductVariation {
   id        Int      @id @default(autoincrement())
   productId Int
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   size      String?
   color     String?
   material  String?
@@ -47,17 +50,112 @@ model ProductVariation {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId], map: "ProductVariation_productId_fkey")
 }
 
 model ProductImage {
   id        Int      @id @default(autoincrement())
   productId Int
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String
+  url       String   @db.Text
   alt       String?
   isPrimary Boolean  @default(false)
   order     Int      @default(0)
   createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId], map: "ProductImage_productId_fkey")
+}
+
+model Payment {
+  id                String         @id @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  mercadopagoId     String         @unique
+  externalReference String         @unique
+  amount            Decimal        @db.Decimal(10, 2)
+  currency          String         @default("BRL")
+  status            PaymentStatus
+  paymentMethod     String
+  payerName         String
+  payerEmail        String
+  payerCpf          String
+  description       String?
+  items             Json?
+  receiptUrl        String?
+  successUrl        String?
+  failureUrl        String?
+  mpCreatedAt       DateTime?
+  mpUpdatedAt       DateTime?
+  mpStatusDetail    String?
+  mpRejectionReason String?
+  webhookEvents     WebhookEvent[]
+
+  @@map("payments")
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  paymentId   String
+  eventType   String
+  eventData   Json
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  error       String?
+  payment     Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId], map: "webhook_events_paymentId_fkey")
+  @@map("webhook_events")
+}
+
+model AccessLog {
+  id           String     @id @default(cuid())
+  userId       Int?
+  ip           String?
+  city         String?
+  browser      String?
+  deviceType   AccessLog_deviceType @default(UNKNOWN)
+  deviceBrand  String?
+  deviceModel  String?
+
+  // >>> novos campos <<<
+  userAgentRaw String?
+  chUa         String?
+  chUaPlatform String?
+  chUaMobile   String?
+  chUaModel    String?
+
+  createdAt    DateTime   @default(now())
+
+  user         User?      @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([ip])
+  @@index([userId])
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  Product     Product[]
+}
+
+model Coupon {
+  id              String              @id
+  code            String              @unique
+  discount        Float
+  discountType    Coupon_discountType
+  maxUses         Int                 @default(-1)
+  startAmount     Int                 @default(-1)
+  availableAmount Int                 @default(-1)
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime
+  productId       Int?
 }
 
 enum Role {
@@ -65,77 +163,25 @@ enum Role {
   CUSTOMER
 }
 
-model Payment {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // IDs do Mercado Pago
-  mercadopagoId     String   @unique
-  externalReference String   @unique
-  
-  // Informações do pagamento
-  amount            Decimal  @db.Decimal(10, 2)
-  currency          String   @default("BRL")
-  status            PaymentStatus
-  paymentMethod     String
-  
-  // Informações do pagador
-  payerName         String
-  payerEmail        String
-  payerCpf          String
-  
-  // Metadados e informações adicionais
-  description       String?
-  items             Json?    // Array de itens em JSON
-  
-  // URLs e referências
-  receiptUrl        String?
-  successUrl        String?
-  failureUrl        String?
-  
-  // Timestamps do Mercado Pago
-  mpCreatedAt       DateTime?
-  mpUpdatedAt       DateTime?
-  
-  // Status específicos do Mercado Pago
-  mpStatusDetail    String?
-  mpRejectionReason String?
-  
-  // Relacionamentos
-  webhookEvents     WebhookEvent[]
-  
-  @@map("payments")
-}
-
-// Eventos de webhook para auditoria
-model WebhookEvent {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  
-  // Referência ao pagamento
-  paymentId   String
-  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  
-  // Dados do webhook
-  eventType   String   // payment.created, payment.updated, etc.
-  eventData   Json     // Dados completos do webhook
-  
-  // Status do processamento
-  processed   Boolean  @default(false)
-  processedAt DateTime?
-  error       String?
-  
-  @@map("webhook_events")
-}
-
-// Enum para status dos pagamentos
 enum PaymentStatus {
-  PENDING     // Pendente
-  APPROVED    // Aprovado
-  REJECTED    // Recusado
-  CANCELLED   // Cancelado
-  IN_PROCESS  // Em processamento
-  REFUNDED    // Reembolsado
-  CHARGED_BACK // Contestado
-} 
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  IN_PROCESS
+  REFUNDED
+  CHARGED_BACK
+}
+
+enum Coupon_discountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum AccessLog_deviceType {
+  MOBILE
+  DESKTOP
+   TABLET
+  BOT
+  UNKNOWN
+}

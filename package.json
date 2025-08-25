@@ -3,10 +3,11 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "next dev --turbopack",
-        "build": "next build --turbopack",
-        "start": "next start",
-        "lint": "eslint"
+        "dev": "next dev --turbo",
+        "build": "prisma generate && next build",
+        "start": "next start -p 3000",
+        "lint": "next lint",
+        "postinstall": "prisma generate"
     },
     "dependencies": {
         "@next-auth/prisma-adapter": "^1.0.7",
@@ -22,7 +23,8 @@
         "react": "19.1.0",
         "react-dom": "19.1.0",
         "react-toastify": "^11.0.5",
-        "sass": "^1.90.0"
+        "sass": "^1.90.0",
+        "ua-parser-js": "^2.0.4"
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3",
@@ -36,16 +38,5 @@
         "prisma": "^6.14.0",
         "tailwindcss": "^4",
         "typescript": "^5"
-    },
-    "scripts": {
-    "dev": "next dev --turbo",
-    "build": "prisma generate && next build",
-    "start": "next start -p 3000",
-    "lint": "next lint",
-    "postinstall": "prisma generate"
     }
 }
-
-
-   
-

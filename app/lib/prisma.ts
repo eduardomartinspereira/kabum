@@ -1,14 +1,130 @@
-import { PrismaClient } from '@prisma/client';
+// src/lib/prisma.ts  (ou "@/lib/prisma")
+import { PrismaClient, AccessLog_deviceType} from '@prisma/client';
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+/**
+ * Evita múltiplas instâncias em dev (HMR).
+ */
+declare global {
+  // eslint-disable-next-line no-var
+  var __PRISMA__: PrismaClient | undefined;
+}
 
-export const prisma =
-    globalForPrisma.prisma ??
-    new PrismaClient({
-        log:
-            process.env.NODE_ENV === 'development'
-                ? ['query', 'error', 'warn']
-                : ['error'],
+function createPrismaClient() {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development'
+      ? ['query', 'warn', 'error']
+      : ['error'],
+    datasources: { db: { url: process.env.DATABASE_URL } },
+  });
+}
+
+export const prisma: PrismaClient =
+  globalThis.__PRISMA__ ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.__PRISMA__ = prisma;
+}
+
+/* ========================================================================
+ * Helpers específicos para "acessos"
+ * ===================================================================== */
+
+/**
+ * Tipagem de entrada para salvar um acesso.
+ * (todos os campos são opcionais para não travar a gravação)
+ */
+export type AccessLogInput = {
+  userId?: string | null;
+  ip?: string | null;
+  city?: string | null;
+
+  // resultados do UA parser
+  browser?: string | null;
+  deviceType?: AccessLog_deviceType | null;     // 'MOBILE' | 'DESKTOP' | 'TABLET' | ...
+
+  deviceBrand?: string | null;
+  deviceModel?: string | null;
+
+  // extras para reduzir "Unknown" no futuro
+  userAgentRaw?: string | null;
+  chUa?: string | null;               // Sec-CH-UA
+  chUaPlatform?: string | null;       // Sec-CH-UA-Platform
+  chUaMobile?: string | null;         // Sec-CH-UA-Mobile
+  chUaModel?: string | null;          // Sec-CH-UA-Model
+};
+
+/**
+ * Normaliza/bucketa o nome do navegador para reduzir variações
+ * e concentrar métricas (ex.: "Mobile Safari" -> "Safari iOS").
+ */
+export function normalizeBrowser(name?: string | null): string | null {
+  if (!name) return 'Outros';
+  const n = name.toLowerCase();
+
+  if (n === 'unknown') return 'Outros';
+  if (n.includes('samsung')) return 'Samsung Internet';
+  if (n.includes('edg')) return 'Edge';
+  if (n.includes('mobile safari')) return 'Safari iOS';
+  if (n === 'safari') return 'Safari';
+  if (n.includes('fxios') || n.includes('firefox')) return 'Firefox';
+  if (n.includes('crios')) return 'Chrome iOS';
+  if (n.includes('chrome')) return 'Chrome';
+  return name;
+}
+
+/**
+ * Fallback seguro para o enum DeviceType.
+ */
+export function coerceDeviceType(t?: AccessLog_deviceType | string | null): AccessLog_deviceType {
+  const v = String(t || '').toUpperCase();
+  if (v === 'MOBILE') return AccessLog_deviceType.MOBILE;
+  if (v === 'DESKTOP') return AccessLog_deviceType.DESKTOP;
+  if (v === 'TABLET') return AccessLog_deviceType.TABLET;
+  if (v === 'BOT') return AccessLog_deviceType.BOT;
+  return AccessLog_deviceType.UNKNOWN;
+}
+
+/**
+ * Salva um acesso no banco, com normalizações básicas.
+ * Use isso na tua rota /api/track depois de parsear o User-Agent e Client Hints.
+ */
+export async function saveAccessLog(input: AccessLogInput): Promise<void> {
+  try {
+    await prisma.accessLog.create({
+      data: {
+        userId: input.userId != null ? Number(input.userId) : undefined,
+        ip: input.ip ?? undefined,
+        city: input.city ?? undefined,
+
+        browser: normalizeBrowser(input.browser),
+        deviceType: coerceDeviceType(input.deviceType),
+
+        deviceBrand: input.deviceBrand ?? undefined,
+        deviceModel: input.deviceModel ?? undefined,
+
+        userAgentRaw: input.userAgentRaw ?? undefined,
+        chUa: input.chUa ?? undefined,
+        chUaPlatform: input.chUaPlatform ?? undefined,
+        chUaMobile: input.chUaMobile ?? undefined,
+        chUaModel: input.chUaModel ?? undefined,
+      },
     });
+  } catch (err) {
+    // não propaga para não quebrar a navegação/rota
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[saveAccessLog] erro ao gravar', err);
+    }
+  }
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+/**
+ * (Opcional) Health-check simples para start-up/tests.
+ */
+export async function prismaHealthy(): Promise<boolean> {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch {
+    return false;
+  }
+}
