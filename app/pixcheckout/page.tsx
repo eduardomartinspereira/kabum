@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { PaymentStatusNotification } from '../components/PaymentStatusNotification';
 import { PaymentSuccessModal } from '../components/PaymentSuccessModal';
+import Header from '../components/Header';
 
 type PixResp = {
   id: string;
@@ -17,15 +18,27 @@ type PixResp = {
 
 export default function PixCheckoutPage() {
   return (
-    <Suspense
-      fallback={
-        <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
-          <p>Carregando dados do checkout…</p>
-        </main>
-      }
-    >
-      <PixCheckoutInner />
-    </Suspense>
+    <>
+      <Header />
+      <Suspense
+        fallback={
+          <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
+            <p>Carregando dados do checkout…</p>
+          </main>
+        }
+      >
+        <PixCheckoutInner />
+      </Suspense>
+      <footer style={{ 
+        background: '#f3f4f6', 
+        padding: '20px', 
+        textAlign: 'center', 
+        borderTop: '1px solid #e5e7eb',
+        marginTop: '40px'
+      }}>
+        <p>&copy; 2025 ShopMaster. Todos os direitos reservados.</p>
+      </footer>
+    </>
   );
 }
 
@@ -135,28 +148,15 @@ function PixCheckoutInner() {
   };
 
   return (
-    <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
-      {/* Debug info */}
-      {pix?.id && (
-        <div style={{
-          position: 'fixed',
-          top: '10px',
-          left: '10px',
-          background: '#f0f0f0',
-          padding: '10px',
-          borderRadius: '5px',
-          fontSize: '12px',
-          zIndex: 1001,
-          border: '1px solid #ccc'
-        }}>
-          <strong>Debug:</strong><br/>
-          Payment ID: {pix.id}<br/>
-          Status: {status || 'N/A'}<br/>
-          Show Notification: {showNotification ? 'Yes' : 'No'}<br/>
-          Show Modal: {showSuccessModal ? 'Yes' : 'No'}
-        </div>
-      )}
-
+    <main style={{ 
+      maxWidth: 920, 
+      margin: '0 auto', 
+      padding: 24,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      minHeight: 'calc(100vh - 200px)'
+    }}>
       {/* Notificação de status */}
       {showNotification && pix?.id && status && (
         <PaymentStatusNotification
@@ -179,18 +179,29 @@ function PixCheckoutInner() {
 
       <button
         onClick={() => router.back()}
-        style={{ marginBottom: 16, border: '1px solid #e5e7eb', padding: '6px 10px', borderRadius: 8 }}
+        style={{ 
+          marginBottom: 16, 
+          border: '1px solid #e5e7eb', 
+          padding: '6px 10px', 
+          borderRadius: 8,
+          alignSelf: 'flex-start'
+        }}
       >
         ← Voltar
       </button>
 
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Pagamento via PIX</h1>
-      <p style={{ color: '#6b7280', marginBottom: 16 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>Pagamento via PIX</h1>
+      <p style={{ color: '#6b7280', marginBottom: 16, textAlign: 'center' }}>
         Total: <strong>R$ {amount.toFixed(2).replace('.', ',')}</strong>
       </p>
 
       {!pix && (
-        <form onSubmit={gerarPix} style={{ display: 'grid', gap: 12, maxWidth: 520 }}>
+        <form onSubmit={gerarPix} style={{ 
+          display: 'grid', 
+          gap: 12, 
+          maxWidth: 520,
+          width: '100%'
+        }}>
           <label style={{ display: 'grid', gap: 6 }}>
             <span>Nome completo</span>
             <input
@@ -249,58 +260,21 @@ function PixCheckoutInner() {
       )}
 
       {pix && (
-        <section style={{ marginTop: 24, display: 'grid', gap: 12 }}>
+        <section style={{ 
+          marginTop: 24, 
+          display: 'grid', 
+          gap: 12,
+          maxWidth: 520,
+          width: '100%',
+          textAlign: 'center'
+        }}>
           <h2 style={{ fontSize: 18, fontWeight: 700 }}>QR Code</h2>
           
-          {/* Status do pagamento */}
-          {status && (
-            <div style={{
-              padding: 12,
-              borderRadius: 8,
-              background: status === 'approved' ? '#ecfdf5' : 
-                         status === 'rejected' ? '#fef2f2' : 
-                         status === 'in_process' ? '#eff6ff' : '#fefce8',
-              border: `1px solid ${
-                status === 'approved' ? '#d1fae5' : 
-                status === 'rejected' ? '#fecaca' : 
-                status === 'in_process' ? '#bfdbfe' : '#fde68a'
-              }`,
-              color: status === 'approved' ? '#065f46' : 
-                     status === 'rejected' ? '#991b1b' : 
-                     status === 'in_process' ? '#1e40af' : '#92400e'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 16 }}>
-                  {status === 'approved' ? '✅' : 
-                   status === 'rejected' ? '❌' : 
-                   status === 'in_process' ? '🔄' : '⏳'}
-                </span>
-                <strong>
-                  Status: {status === 'approved' ? 'Aprovado' : 
-                          status === 'rejected' ? 'Rejeitado' : 
-                          status === 'in_process' ? 'Em Processamento' : 
-                          status === 'pending' ? 'Pendente' : status}
-                </strong>
-              </div>
-              {statusLoading && (
-                <p style={{ margin: '4px 0 0', fontSize: 14, opacity: 0.8 }}>
-                  Verificando status...
-                </p>
-              )}
-              {statusError && (
-                <p style={{ margin: '4px 0 0', fontSize: 14, color: '#dc2626' }}>
-                  Erro ao verificar status: {statusError}
-                </p>
-              )}
-              
-            </div>
-          )}
-
           {pix.qr_code_base64 ? (
             <img
               src={`data:image/png;base64,${pix.qr_code_base64}`}
               alt="QR Code PIX"
-              style={{ width: 260, height: 260, border: '1px solid #e5e7eb', borderRadius: 8 }}
+              style={{ width: 260, height: 260, border: '1px solid #e5e7eb', borderRadius: 8, margin: '0 auto' }}
             />
           ) : (
             <p>Copie o código abaixo no seu app do banco.</p>
@@ -317,7 +291,7 @@ function PixCheckoutInner() {
           
           <button
             onClick={() => navigator.clipboard.writeText(pix.qr_code || '')}
-            style={{ border: '1px solid #e5e7eb', padding: '10px 12px', borderRadius: 8, width: 200 }}
+            style={{ border: '1px solid #e5e7eb', padding: '10px 12px', borderRadius: 8, width: 200, margin: '0 auto' }}
           >
             Copiar código
           </button>
