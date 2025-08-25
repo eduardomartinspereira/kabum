@@ -15,8 +15,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    console.log(`[PAYMENT-STATUS-API] 🔍 Verificando status do pagamento: ${paymentId}`);
+
     // Verificar status no Mercado Pago
     const status = await mercadoPagoService.getPaymentStatus(paymentId);
+
+    console.log(`[PAYMENT-STATUS-API] 📊 Status retornado: ${status} para pagamento: ${paymentId}`);
 
     return NextResponse.json({
       success: true,
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('[PAYMENT-STATUS-API] erro:', error);
+    console.error('[PAYMENT-STATUS-API] ❌ erro:', error);
     
     return NextResponse.json(
       {

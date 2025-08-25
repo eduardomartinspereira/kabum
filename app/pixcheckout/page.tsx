@@ -1,10 +1,11 @@
 // app/pix-checkout/page.tsx
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
-import Header from '../components/Header';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { PaymentStatusNotification } from '../components/PaymentStatusNotification';
+import { PaymentSuccessModal } from '../components/PaymentSuccessModal';
 
 type PixResp = {
   id: string;
@@ -16,27 +17,15 @@ type PixResp = {
 
 export default function PixCheckoutPage() {
   return (
-    <>
-      <Header />
-      <Suspense
-        fallback={
-          <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
-            <p>Carregando dados do checkout…</p>
-          </main>
-        }
-      >
-        <PixCheckoutInner />
-      </Suspense>
-      <footer style={{ 
-        background: '#f3f4f6', 
-        padding: '20px', 
-        textAlign: 'center', 
-        borderTop: '1px solid #e5e7eb',
-        marginTop: '40px'
-      }}>
-        <p>&copy; 2025 ShopMaster. Todos os direitos reservados.</p>
-      </footer>
-    </>
+    <Suspense
+      fallback={
+        <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
+          <p>Carregando dados do checkout…</p>
+        </main>
+      }
+    >
+      <PixCheckoutInner />
+    </Suspense>
   );
 }
 
@@ -55,6 +44,31 @@ function PixCheckoutInner() {
   const [loading, setLoading] = useState(false);
   const [pix, setPix] = useState<PixResp | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Hook para verificar status do pagamento
+  const { status, loading: statusLoading, error: statusError } = usePaymentStatus({
+    paymentId: pix?.id || null,
+    enabled: !!pix?.id,
+    onApproved: () => {
+      console.log('[PIX-PAGE] 🎉 onApproved chamado! Mostrando modal e notificação');
+      setShowNotification(true);
+      setShowSuccessModal(true);
+      // Redirecionar para página de sucesso após 8 segundos (tempo para ver o modal)
+      setTimeout(() => {
+        console.log('[PIX-PAGE] 🔄 Redirecionando para página de sucesso');
+        router.push(`/success?paymentId=${pix?.id}&status=approved&ref=${pix?.external_reference}`);
+      }, 8000);
+    },
+    onStatusChange: (newStatus) => {
+      console.log(`[PIX-PAGE] 🔄 Status mudou para: ${newStatus}`);
+      if (newStatus && newStatus !== 'pending') {
+        console.log(`[PIX-PAGE] 📢 Mostrando notificação para status: ${newStatus}`);
+        setShowNotification(true);
+      }
+    },
+  });
 
   async function gerarPix(e: React.FormEvent) {
     e.preventDefault();
@@ -76,15 +90,8 @@ function PixCheckoutInner() {
       if (!res.ok || !json?.success) {
         throw new Error(json?.error || 'Falha (200) ao gerar PIX');
       }
+      console.log('[PIX-PAGE] ✅ PIX gerado com sucesso:', json.data);
       setPix(json.data as PixResp);
-      toast.success('📱 PIX gerado com sucesso! Escaneie o QR Code ou copie o código.', {
-        position: "top-right",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true
-      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erro ao gerar PIX';
       setErr(msg);
@@ -93,41 +100,97 @@ function PixCheckoutInner() {
     }
   }
 
+  // Mostrar notificação quando status mudar
+  useEffect(() => {
+    console.log(`[PIX-PAGE] 📊 Status atual: ${status}`);
+    if (status && status !== 'pending') {
+      console.log(`[PIX-PAGE] 📢 Status não é pending, mostrando notificação`);
+      setShowNotification(true);
+    }
+  }, [status]);
+
+  // Debug: mostrar quando o modal de sucesso deve aparecer
+  useEffect(() => {
+    if (showSuccessModal) {
+      console.log('[PIX-PAGE] 🎭 Modal de sucesso ativado');
+    }
+  }, [showSuccessModal]);
+
+  // Debug: logar quando o PIX é definido
+  useEffect(() => {
+    if (pix?.id) {
+      console.log(`[PIX-PAGE] 🆔 PIX definido com ID: ${pix.id}`);
+    }
+  }, [pix?.id]);
+
+  const handleContinueShopping = () => {
+    console.log('[PIX-PAGE] 🛒 Usuário clicou em continuar comprando');
+    setShowSuccessModal(false);
+    router.push('/');
+  };
+
+  const handleCloseModal = () => {
+    console.log('[PIX-PAGE] ❌ Usuário fechou o modal');
+    setShowSuccessModal(false);
+  };
+
   return (
-    <main style={{ 
-      maxWidth: 920, 
-      margin: '0 auto', 
-      padding: 24,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      minHeight: 'calc(100vh - 200px)'
-    }}>
+    <main style={{ maxWidth: 920, margin: '0 auto', padding: 24 }}>
+      {/* Debug info */}
+      {pix?.id && (
+        <div style={{
+          position: 'fixed',
+          top: '10px',
+          left: '10px',
+          background: '#f0f0f0',
+          padding: '10px',
+          borderRadius: '5px',
+          fontSize: '12px',
+          zIndex: 1001,
+          border: '1px solid #ccc'
+        }}>
+          <strong>Debug:</strong><br/>
+          Payment ID: {pix.id}<br/>
+          Status: {status || 'N/A'}<br/>
+          Show Notification: {showNotification ? 'Yes' : 'No'}<br/>
+          Show Modal: {showSuccessModal ? 'Yes' : 'No'}
+        </div>
+      )}
+
+      {/* Notificação de status */}
+      {showNotification && pix?.id && status && (
+        <PaymentStatusNotification
+          status={status}
+          paymentId={pix.id}
+          onClose={() => setShowNotification(false)}
+        />
+      )}
+
+      {/* Modal de sucesso */}
+      {showSuccessModal && pix && (
+        <PaymentSuccessModal
+          paymentId={pix.id}
+          externalReference={pix.external_reference}
+          amount={amount}
+          onClose={handleCloseModal}
+          onContinue={handleContinueShopping}
+        />
+      )}
+
       <button
         onClick={() => router.back()}
-        style={{ 
-          marginBottom: 16, 
-          border: '1px solid #e5e7eb', 
-          padding: '6px 10px', 
-          borderRadius: 8,
-          alignSelf: 'flex-start'
-        }}
+        style={{ marginBottom: 16, border: '1px solid #e5e7eb', padding: '6px 10px', borderRadius: 8 }}
       >
         ← Voltar
       </button>
 
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>Pagamento via PIX</h1>
-      <p style={{ color: '#6b7280', marginBottom: 16, textAlign: 'center' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Pagamento via PIX</h1>
+      <p style={{ color: '#6b7280', marginBottom: 16 }}>
         Total: <strong>R$ {amount.toFixed(2).replace('.', ',')}</strong>
       </p>
 
       {!pix && (
-        <form onSubmit={gerarPix} style={{ 
-          display: 'grid', 
-          gap: 12, 
-          maxWidth: 520,
-          width: '100%'
-        }}>
+        <form onSubmit={gerarPix} style={{ display: 'grid', gap: 12, maxWidth: 520 }}>
           <label style={{ display: 'grid', gap: 6 }}>
             <span>Nome completo</span>
             <input
@@ -186,21 +249,58 @@ function PixCheckoutInner() {
       )}
 
       {pix && (
-        <section style={{ 
-          marginTop: 24, 
-          display: 'grid', 
-          gap: 12,
-          maxWidth: 520,
-          width: '100%',
-          textAlign: 'center'
-        }}>
+        <section style={{ marginTop: 24, display: 'grid', gap: 12 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700 }}>QR Code</h2>
           
+          {/* Status do pagamento */}
+          {status && (
+            <div style={{
+              padding: 12,
+              borderRadius: 8,
+              background: status === 'approved' ? '#ecfdf5' : 
+                         status === 'rejected' ? '#fef2f2' : 
+                         status === 'in_process' ? '#eff6ff' : '#fefce8',
+              border: `1px solid ${
+                status === 'approved' ? '#d1fae5' : 
+                status === 'rejected' ? '#fecaca' : 
+                status === 'in_process' ? '#bfdbfe' : '#fde68a'
+              }`,
+              color: status === 'approved' ? '#065f46' : 
+                     status === 'rejected' ? '#991b1b' : 
+                     status === 'in_process' ? '#1e40af' : '#92400e'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>
+                  {status === 'approved' ? '✅' : 
+                   status === 'rejected' ? '❌' : 
+                   status === 'in_process' ? '🔄' : '⏳'}
+                </span>
+                <strong>
+                  Status: {status === 'approved' ? 'Aprovado' : 
+                          status === 'rejected' ? 'Rejeitado' : 
+                          status === 'in_process' ? 'Em Processamento' : 
+                          status === 'pending' ? 'Pendente' : status}
+                </strong>
+              </div>
+              {statusLoading && (
+                <p style={{ margin: '4px 0 0', fontSize: 14, opacity: 0.8 }}>
+                  Verificando status...
+                </p>
+              )}
+              {statusError && (
+                <p style={{ margin: '4px 0 0', fontSize: 14, color: '#dc2626' }}>
+                  Erro ao verificar status: {statusError}
+                </p>
+              )}
+              
+            </div>
+          )}
+
           {pix.qr_code_base64 ? (
             <img
               src={`data:image/png;base64,${pix.qr_code_base64}`}
               alt="QR Code PIX"
-              style={{ width: 260, height: 260, border: '1px solid #e5e7eb', borderRadius: 8, margin: '0 auto' }}
+              style={{ width: 260, height: 260, border: '1px solid #e5e7eb', borderRadius: 8 }}
             />
           ) : (
             <p>Copie o código abaixo no seu app do banco.</p>
@@ -217,39 +317,33 @@ function PixCheckoutInner() {
           
           <button
             onClick={() => navigator.clipboard.writeText(pix.qr_code || '')}
-            style={{ border: '1px solid #e5e7eb', padding: '10px 12px', borderRadius: 8, width: 200, margin: '0 auto' }}
+            style={{ border: '1px solid #e5e7eb', padding: '10px 12px', borderRadius: 8, width: 200 }}
           >
             Copiar código
           </button>
-          
-          {/* Informações do pedido */}
-          <div style={{ 
-            marginTop: 20,
-            padding: '16px',
-            background: '#f9fafb',
+
+          {/* Instruções para o usuário */}
+          <div style={{
+            marginTop: 16,
+            padding: 16,
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
             borderRadius: 8,
-            border: '1px solid #e5e7eb',
-            textAlign: 'left'
+            fontSize: 14,
+            color: '#475569'
           }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 600, color: '#374151' }}>
-              📦 Resumo do Pedido
-            </h3>
-            <div style={{ display: 'grid', gap: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280' }}>Produto:</span>
-                <span style={{ fontWeight: 500 }}>{sp.get('productName') || 'Produto selecionado'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280' }}>Quantidade:</span>
-                <span style={{ fontWeight: 500 }}>{sp.get('qty') || '1'} unidade(s)</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280' }}>Total:</span>
-                <span style={{ fontWeight: 700, color: '#065f46' }}>
-                  R$ {amount.toFixed(2).replace('.', ',')}
-                </span>
-              </div>
-            </div>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: 16, fontWeight: 600 }}>📱 Como pagar:</h3>
+            <ol style={{ margin: 0, paddingLeft: 20 }}>
+              <li>Abra o app do seu banco</li>
+              <li>Escolha a opção PIX</li>
+              <li>Escaneie o QR Code ou cole o código copia e cola</li>
+              <li>Confirme o pagamento</li>
+              <li>Aguarde a confirmação automática</li>
+            </ol>
+            <p style={{ margin: '12px 0 0 0', fontSize: 13, color: '#64748b' }}>
+              <strong>💡 Dica:</strong> O status será atualizado automaticamente. 
+              Quando aprovado, você verá uma tela de confirmação e será redirecionado automaticamente.
+            </p>
           </div>
         </section>
       )}
