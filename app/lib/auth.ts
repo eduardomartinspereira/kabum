@@ -59,9 +59,9 @@ export const authOptions: NextAuthOptions = {
           try {
             await saveAccessLog({
               userId: String(dbUser.id),
-              browser: account?.provider === 'google' ? 'Google OAuth' : 'Credentials',
-              deviceType: 'DESKTOP', // Default, pode ser melhorado
+              deviceType: 'DESKTOP', // Tipo de dispositivo
               userAgentRaw: `NextAuth Login - Provider: ${account?.provider || 'credentials'}`,
+              // Não passamos browser aqui, deixamos o sistema detectar automaticamente
             });
             console.log('✅ Login registrado com sucesso no AccessLog');
           } catch (error) {

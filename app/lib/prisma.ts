@@ -99,7 +99,20 @@ export async function saveAccessLog(input: AccessLogInput): Promise<void> {
     if (input.userId != null) data.userId = Number(input.userId);
     if (input.ip) data.ip = input.ip;
     if (input.city) data.city = input.city;
-    if (input.browser) data.browser = normalizeBrowser(input.browser);
+    
+    // Detectar navegador automaticamente se não fornecido
+    if (input.browser) {
+      data.browser = normalizeBrowser(input.browser);
+    } else if (input.userAgentRaw) {
+      // Tentar extrair navegador do userAgent se disponível
+      const ua = input.userAgentRaw.toLowerCase();
+      if (ua.includes('chrome')) data.browser = 'Chrome';
+      else if (ua.includes('firefox')) data.browser = 'Firefox';
+      else if (ua.includes('safari')) data.browser = 'Safari';
+      else if (ua.includes('edge')) data.browser = 'Edge';
+      else data.browser = 'Outros';
+    }
+    
     if (input.deviceBrand) data.deviceBrand = input.deviceBrand;
     if (input.deviceModel) data.deviceModel = input.deviceModel;
     if (input.userAgentRaw) data.userAgentRaw = input.userAgentRaw;
