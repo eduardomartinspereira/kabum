@@ -89,6 +89,8 @@ export function coerceDeviceType(t?: AccessLog_deviceType | string | null): Acce
  * Use isso na tua rota /api/track depois de parsear o User-Agent e Client Hints.
  */
 export async function saveAccessLog(input: AccessLogInput): Promise<void> {
+  console.log('📝 saveAccessLog chamada com input:', input);
+  
   try {
     const data: any = {
       deviceType: coerceDeviceType(input.deviceType),
@@ -106,7 +108,10 @@ export async function saveAccessLog(input: AccessLogInput): Promise<void> {
     if (input.chUaMobile) data.chUaMobile = input.chUaMobile;
     if (input.chUaModel) data.chUaModel = input.chUaModel;
 
-    await prisma.accessLog.create({ data });
+    console.log('📊 Dados preparados para AccessLog:', data);
+    
+    const result = await prisma.accessLog.create({ data });
+    console.log('✅ AccessLog criado com sucesso:', result.id);
   } catch (err) {
     // não propaga para não quebrar a navegação/rota
     if (process.env.NODE_ENV === 'development') {

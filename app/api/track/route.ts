@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     if (chUaMobile) data.chUaMobile = chUaMobile;
     if (chUaModel) data.chUaModel = chUaModel;
 
-    await prisma.accessLog.create({ data });
+    await prisma.accessLog.create({ data }); 
 
     return NextResponse.json({ ok: true });
   } catch {

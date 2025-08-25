@@ -3,8 +3,8 @@ import bcrypt from 'bcryptjs';
 import type { NextAuthOptions, User } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-// Use o alias se estiver configurado; caso contrário ajuste o caminho:
 import { prisma } from '../lib/prisma';
+import { saveAccessLog } from './prisma';
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
@@ -53,6 +53,20 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.id = String(dbUser.id);
           token.role = dbUser.role; // string/union é compatível
+          
+          // Registrar o login no AccessLog
+          console.log('🔐 Tentando registrar login no AccessLog para usuário:', dbUser.id);
+          try {
+            await saveAccessLog({
+              userId: String(dbUser.id),
+              browser: account?.provider === 'google' ? 'Google OAuth' : 'Credentials',
+              deviceType: 'DESKTOP', // Default, pode ser melhorado
+              userAgentRaw: `NextAuth Login - Provider: ${account?.provider || 'credentials'}`,
+            });
+            console.log('✅ Login registrado com sucesso no AccessLog');
+          } catch (error) {
+            console.error('❌ Erro ao registrar login no AccessLog:', error);
+          }
         }
       }
 
