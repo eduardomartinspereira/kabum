@@ -90,25 +90,23 @@ export function coerceDeviceType(t?: AccessLog_deviceType | string | null): Acce
  */
 export async function saveAccessLog(input: AccessLogInput): Promise<void> {
   try {
-    await prisma.accessLog.create({
-      data: {
-        userId: input.userId != null ? Number(input.userId) : undefined,
-        ip: input.ip ?? undefined,
-        city: input.city ?? undefined,
+    const data: any = {
+      deviceType: coerceDeviceType(input.deviceType),
+    };
 
-        browser: normalizeBrowser(input.browser),
-        deviceType: coerceDeviceType(input.deviceType),
+    if (input.userId != null) data.userId = Number(input.userId);
+    if (input.ip) data.ip = input.ip;
+    if (input.city) data.city = input.city;
+    if (input.browser) data.browser = normalizeBrowser(input.browser);
+    if (input.deviceBrand) data.deviceBrand = input.deviceBrand;
+    if (input.deviceModel) data.deviceModel = input.deviceModel;
+    if (input.userAgentRaw) data.userAgentRaw = input.userAgentRaw;
+    if (input.chUa) data.chUa = input.chUa;
+    if (input.chUaPlatform) data.chUaPlatform = input.chUaPlatform;
+    if (input.chUaMobile) data.chUaMobile = input.chUaMobile;
+    if (input.chUaModel) data.chUaModel = input.chUaModel;
 
-        deviceBrand: input.deviceBrand ?? undefined,
-        deviceModel: input.deviceModel ?? undefined,
-
-        userAgentRaw: input.userAgentRaw ?? undefined,
-        chUa: input.chUa ?? undefined,
-        chUaPlatform: input.chUaPlatform ?? undefined,
-        chUaMobile: input.chUaMobile ?? undefined,
-        chUaModel: input.chUaModel ?? undefined,
-      },
-    });
+    await prisma.accessLog.create({ data });
   } catch (err) {
     // não propaga para não quebrar a navegação/rota
     if (process.env.NODE_ENV === 'development') {

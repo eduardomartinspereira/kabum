@@ -8,16 +8,16 @@ datasource db {
 }
 
 model User {
-  id        Int         @id @default(autoincrement())
-  email     String      @unique
-  cpf       String?     @unique
-  password  String?
-  firstName String?
-  lastName  String?
-  phone     String?
-  role      Role
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id         Int         @id @default(autoincrement())
+  email      String      @unique
+  cpf        String?     @unique
+  password   String?
+  firstName  String?
+  lastName   String?
+  phone      String?
+  role       Role
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @default(now()) @updatedAt
   accessLogs AccessLog[]
 }
 
@@ -30,10 +30,12 @@ model Product {
   isActive    Boolean            @default(true)
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @default(now()) @updatedAt
+  categoryId  Int?
+  category    Category?          @relation(fields: [categoryId], references: [id])
   images      ProductImage[]
   variations  ProductVariation[]
-  categoryId  Int?
-  category    Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([categoryId], map: "Product_categoryId_fkey")
 }
 
 model ProductVariation {
@@ -108,6 +110,50 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
+model AccessLog {
+   id           String     @id @default(cuid())  // <-- precisa desse default
+  userId       Int?
+  ip           String?
+  city         String?
+  browser      String?
+  deviceType   AccessLog_deviceType @default(UNKNOWN)
+  createdAt    DateTime             @default(now())
+  deviceBrand  String?
+  deviceModel  String?
+  chUa         String?
+  chUaMobile   String?
+  chUaModel    String?
+  chUaPlatform String?
+  userAgentRaw String?
+  user         User?                @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([ip])
+  @@index([userId])
+}
+
+model Coupon {
+  id              String              @id
+  code            String              @unique
+  discount        Float
+  discountType    Coupon_discountType
+  maxUses         Int                 @default(-1)
+  startAmount     Int                 @default(-1)
+  availableAmount Int                 @default(-1)
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime
+  productId       Int?
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  products    Product[]
+}
+
 enum Role {
   ADMIN
   CUSTOMER
@@ -123,50 +169,15 @@ enum PaymentStatus {
   CHARGED_BACK
 }
 
-enum DeviceType {
+enum Coupon_discountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum AccessLog_deviceType {
   MOBILE
   DESKTOP
-}
-
-model AccessLog {
-  id          Int        @id @default(autoincrement())
-  userId      Int?
-  ip          String
-  city        String?
-  browser     String      @default("Other")  // evita insert falhar
-  deviceType  DeviceType
-  isIphone    Boolean     @default(false)    // evita insert falhar
-  createdAt   DateTime    @default(now())
-  deviceBrand String?
-  deviceModel String?
-
-  user        User?       @relation(fields: [userId], references: [id])
-
-  @@index([userId], map: "AccessLog_userId_fkey")
-}
-
-model Coupon {
-    id              String              @id
-    code            String              @unique
-    discount        Float
-    discountType    Coupon_discountType
-    maxUses         Int                 @default(-1)
-    startAmount     Int                 @default(-1)
-    availableAmount Int                 @default(-1)
-    isActive        Boolean             @default(true)
-    createdAt       DateTime            @default(now())
-    updatedAt       DateTime
-    productId       Int?
-}
-
-enum Coupon_discountType {
-    PERCENTAGE
-    FIXED
-}
-model Category {
-    id          Int       @id @default(autoincrement())
-    name        String
-    description String?
-    createdAt   DateTime  @default(now())
-    products    Product[]
+  TABLET
+  BOT
+  UNKNOWN
 }

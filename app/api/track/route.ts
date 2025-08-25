@@ -30,19 +30,22 @@ export async function POST(req: Request) {
     const chUaMobile   = req.headers.get('sec-ch-ua-mobile') || undefined;
     const chUaModel    = req.headers.get('sec-ch-ua-model') || undefined;
 
-    await prisma.accessLog.create({
-      data: {
-        // Se tiver auth: userId: session?.user?.id,
-        ip,
-        city,
-        browser: normalizeBrowser(browser),
-        deviceType: (deviceType as any) ?? 'UNKNOWN',
-        deviceBrand,
-        deviceModel,
-        userAgentRaw: ua,
-        chUa, chUaPlatform, chUaMobile, chUaModel,
-      },
-    });
+    const data: any = {
+      deviceType: (deviceType as any) ?? 'UNKNOWN',
+    };
+
+    if (ip) data.ip = ip;
+    if (city) data.city = city;
+    if (browser) data.browser = normalizeBrowser(browser);
+    if (deviceBrand) data.deviceBrand = deviceBrand;
+    if (deviceModel) data.deviceModel = deviceModel;
+    if (ua) data.userAgentRaw = ua;
+    if (chUa) data.chUa = chUa;
+    if (chUaPlatform) data.chUaPlatform = chUaPlatform;
+    if (chUaMobile) data.chUaMobile = chUaMobile;
+    if (chUaModel) data.chUaModel = chUaModel;
+
+    await prisma.accessLog.create({ data });
 
     return NextResponse.json({ ok: true });
   } catch {
