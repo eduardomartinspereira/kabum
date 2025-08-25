@@ -16,9 +16,8 @@ model User {
   lastName  String?
   phone     String?
   role      Role
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @default(now()) @updatedAt
-  AccessLog AccessLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model Product {
@@ -27,15 +26,11 @@ model Product {
   description String
   basePrice   Decimal            @db.Decimal(10, 2)
   brand       String?
-  isActive    Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @default(now()) @updatedAt
-  categoryId  Int?
-  Category    Category?          @relation(fields: [categoryId], references: [id])
+  isActive    Boolean       @default(true)
   images      ProductImage[]
   variations  ProductVariation[]
-
-  @@index([categoryId], map: "Product_categoryId_fkey")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
 }
 
 model ProductVariation {
@@ -110,78 +105,13 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
-model AccessLog {
-  id           String     @id @default(cuid())
-  userId       Int?
-  ip           String?
-  city         String?
-  browser      String?
-  deviceType   AccessLog_deviceType @default(UNKNOWN)
-  deviceBrand  String?
-  deviceModel  String?
-
-  // >>> novos campos <<<
-  userAgentRaw String?
-  chUa         String?
-  chUaPlatform String?
-  chUaMobile   String?
-  chUaModel    String?
-
-  createdAt    DateTime   @default(now())
-
-  user         User?      @relation(fields: [userId], references: [id])
-
-  @@index([createdAt])
-  @@index([ip])
-  @@index([userId])
-}
-
-model Category {
-  id          Int       @id @default(autoincrement())
-  name        String
-  description String?
-  createdAt   DateTime  @default(now())
-  Product     Product[]
-}
-
-model Coupon {
-  id              String              @id
-  code            String              @unique
-  discount        Float
-  discountType    Coupon_discountType
-  maxUses         Int                 @default(-1)
-  startAmount     Int                 @default(-1)
-  availableAmount Int                 @default(-1)
-  isActive        Boolean             @default(true)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime
-  productId       Int?
-}
-
-enum Role {
-  ADMIN
-  CUSTOMER
-}
-
+// Enum para status dos pagamentos
 enum PaymentStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-  IN_PROCESS
-  REFUNDED
-  CHARGED_BACK
-}
-
-enum Coupon_discountType {
-  PERCENTAGE
-  FIXED
-}
-
-enum AccessLog_deviceType {
-  MOBILE
-  DESKTOP
-   TABLET
-  BOT
-  UNKNOWN
-}
+  PENDING     // Pendente
+  APPROVED    // Aprovado
+  REJECTED    // Recusado
+  CANCELLED   // Cancelado
+  IN_PROCESS  // Em processamento
+  REFUNDED    // Reembolsado
+  CHARGED_BACK // Contestado
+} 

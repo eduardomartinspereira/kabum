@@ -28,6 +28,7 @@ export async function GET(
         isActive: true,
       },
       include: {
+        category: true,
         variations: {
           where: { isActive: true },
         },

@@ -330,4 +330,119 @@
 
 .backButton:hover {
     background: var(--primary-hover);
+}
+
+/* Estilos do Cupom */
+.couponSection {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.couponSection h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.couponInputGroup {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.couponField {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  background: var(--bg);
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+.couponField:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.couponField:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.couponButton {
+  padding: 0.75rem 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.couponButton:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.couponButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.couponError {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.couponApplied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #10b981;
+  border-radius: var(--radius);
+}
+
+.couponInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.couponCode {
+  font-weight: 600;
+  color: #059669;
+  font-size: 0.875rem;
+}
+
+.couponDiscount {
+  font-size: 0.75rem;
+  color: #065f46;
+}
+
+.removeCouponButton {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.removeCouponButton:hover {
+  background: #dc2626;
+  color: white;
 } 

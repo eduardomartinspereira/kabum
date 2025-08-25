@@ -24,6 +24,13 @@ function SearchContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Função helper para extrair nome da categoria
+  const getCategoryName = (category: any): string => {
+    if (typeof category === 'string') return category;
+    if (category && typeof category === 'object' && category.name) return category.name;
+    return '';
+  };
+
   useEffect(() => {
     if (!query) return;
 
@@ -37,11 +44,12 @@ function SearchContent() {
 
         // Filtrar produtos baseado na busca
         const q = query.toLowerCase();
+
         const filtered = allProducts.filter((product) => {
           const name = product.name?.toLowerCase() || '';
           const desc = product.description?.toLowerCase() || '';
           const brand = product.brand?.toLowerCase() || '';
-          const cat = product.category?.toLowerCase() || '';
+          const cat = getCategoryName(product.category).toLowerCase();
           return (
             name.includes(q) ||
             desc.includes(q) ||
@@ -124,9 +132,9 @@ function SearchContent() {
                       />
                     ) : (
                       <span className={styles.productIcon}>
-                        {product.category === 'Eletrônicos'
+                        {getCategoryName(product.category) === 'Eletrônicos'
                           ? '📱'
-                          : product.category === 'Calçados'
+                          : getCategoryName(product.category) === 'Calçados'
                           ? '👟'
                           : '🛍️'}
                       </span>
@@ -137,7 +145,9 @@ function SearchContent() {
                     <p className={styles.productDescription}>{product.description}</p>
                     <div className={styles.productMeta}>
                       <span className={styles.brand}>{product.brand}</span>
-                      <span className={styles.category}>{product.category}</span>
+                      <span className={styles.category}>
+                        {getCategoryName(product.category) || 'Geral'}
+                      </span>
                     </div>
                     <div className={styles.productPrice}>
                       <span className={styles.price}>{priceRange}</span>

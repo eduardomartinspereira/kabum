@@ -41,10 +41,17 @@ function CheckoutInner() {
   const [quantity, setQuantity] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  
+  // Estados do cupom
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [couponData, setCouponData] = useState<any>(null);
+  const [couponLoading, setCouponLoading] = useState<boolean>(false);
+  const [couponError, setCouponError] = useState<string>('');
 
   const unitPrice = useMemo(() => Number(variation?.price ?? 0), [variation?.price]);
   const subtotal = useMemo(() => unitPrice * quantity, [unitPrice, quantity]);
-  const total = subtotal;
+  const discountAmount = useMemo(() => couponData?.discountAmount || 0, [couponData]);
+  const total = useMemo(() => Math.max(0, subtotal - discountAmount), [subtotal, discountAmount]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -73,8 +80,21 @@ function CheckoutInner() {
           return;
         }
         const data: Product = await res.json();
-        const picked =
+        let picked =
           data.variations?.find((v) => String(v.id) === String(variationId)) ?? null;
+
+        // Se não encontrou a variação e é uma variação virtual (produtos sem variações)
+        if (!picked && String(variationId).startsWith('virtual-')) {
+          // Criar variação virtual baseada no produto para exibição
+          picked = {
+            id: variationId,
+            size: 'Padrão',
+            color: 'Padrão', 
+            material: 'Padrão',
+            price: (data as any).basePrice || 0,
+            stock: 10, // Assumir estoque disponível
+          };
+        }
 
         setProduct(picked ? data : null);
         setVariation(picked ?? null);
@@ -103,6 +123,52 @@ function CheckoutInner() {
     setQuantity(clamped);
   };
 
+  // Função para validar cupom
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Digite um código de cupom');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError('');
+
+    try {
+      const response = await fetch('/api/validate-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: couponCode.trim(),
+          amount: subtotal,
+          productId: productId
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setCouponData(data);
+        toast.success(`Cupom aplicado! Desconto de R$ ${data.discountAmount.toFixed(2)}`);
+      } else {
+        setCouponError(data.error || 'Erro ao validar cupom');
+        setCouponData(null);
+      }
+    } catch (error) {
+      setCouponError('Erro ao validar cupom');
+      setCouponData(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // Função para remover cupom
+  const removeCoupon = () => {
+    setCouponCode('');
+    setCouponData(null);
+    setCouponError('');
+    toast.info('Cupom removido');
+  };
+
   // Abre o modal de opções
   const handleCheckout = () => {
     if (!variation || !product) return;
@@ -114,20 +180,61 @@ function CheckoutInner() {
   };
 
   // Redireciona para a rota escolhida levando os dados necessários
-  const goToPayment = (path: string) => {
-    const name = session?.user?.name ?? 'Cliente';  // <- sem encodeURIComponent
-    const email = session?.user?.email ?? '';       // <- sem encodeURIComponent
-    const amount = Number(total.toFixed(2));        // garante número
+  const goToPayment = async (path: string) => {
+    const name = session?.user?.name ?? 'Cliente';  
+    const email = session?.user?.email ?? '';       
+    const amount = Number(total.toFixed(2));        
 
-    const qs = new URLSearchParams({
+    let finalVariationId = variationId;
+
+    // Se for uma variação virtual, criar variação real primeiro
+    if (String(variationId).startsWith('virtual-')) {
+      try {
+        const response = await fetch('/api/create-variation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: productId,
+            size: 'Padrão',
+            color: 'Padrão',
+            material: 'Padrão',
+            price: variation?.price || 0,
+            stock: 10,
+            sku: `${productId}-default-${Date.now()}`
+          })
+        });
+        
+        if (response.ok) {
+          const newVariation = await response.json();
+          finalVariationId = newVariation.id;
+        } else {
+          toast.error('Erro ao preparar produto para pagamento');
+          return;
+        }
+      } catch (error) {
+        toast.error('Erro ao preparar produto para pagamento');
+        return;
+      }
+    }
+
+    const params: Record<string, string> = {
       amount: String(amount),
       name,
       email,
       productId: String(productId ?? ''),
-      variationId: String(variationId ?? ''),
+      variationId: String(finalVariationId ?? ''),
       qty: String(quantity),
       productName: product?.name || 'Produto selecionado',
-    }).toString();
+    };
+
+    // Adicionar dados do cupom se aplicado
+    if (couponData) {
+      params.couponCode = couponData.coupon.code;
+      params.originalAmount = String(couponData.originalAmount);
+      params.discountAmount = String(couponData.discountAmount);
+    }
+
+    const qs = new URLSearchParams(params).toString();
 
     router.push(`${path}?${qs}`);
   };
@@ -236,6 +343,52 @@ function CheckoutInner() {
 
           <div className={styles.orderSummary}>
             <h2>Resumo da Compra</h2>
+            
+            {/* Seção de Cupom */}
+            <div className={styles.couponSection}>
+              <h3>Cupom de Desconto</h3>
+              {!couponData ? (
+                <div className={styles.couponInput}>
+                  <div className={styles.couponInputGroup}>
+                    <input
+                      type="text"
+                      placeholder="Digite o código do cupom"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className={styles.couponField}
+                      disabled={couponLoading}
+                    />
+                    <button
+                      onClick={validateCoupon}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className={styles.couponButton}
+                    >
+                      {couponLoading ? 'Validando...' : 'Aplicar'}
+                    </button>
+                  </div>
+                  {couponError && (
+                    <div className={styles.couponError}>
+                      {couponError}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.couponApplied}>
+                  <div className={styles.couponInfo}>
+                    <span className={styles.couponCode}>✅ {couponData.coupon.code}</span>
+                    <span className={styles.couponDiscount}>
+                      -{couponData.coupon.discountType === 'PERCENTAGE' 
+                        ? `${couponData.coupon.discount}%` 
+                        : `R$ ${couponData.coupon.discount.toFixed(2)}`}
+                    </span>
+                  </div>
+                  <button onClick={removeCoupon} className={styles.removeCouponButton}>
+                    Remover
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className={styles.summaryCard}>
               <div className={styles.summaryRow}>
                 <span>Produto:</span>
@@ -264,6 +417,12 @@ function CheckoutInner() {
                 <span>Frete:</span>
                 <span>Grátis</span>
               </div>
+              {couponData && (
+                <div className={styles.summaryRow}>
+                  <span style={{ color: '#059669' }}>Desconto ({couponData.coupon.code}):</span>
+                  <span style={{ color: '#059669' }}>-R$ {brl(discountAmount)}</span>
+                </div>
+              )}
               <div className={styles.summaryDivider} />
               <div className={styles.summaryRow}>
                 <span className={styles.totalLabel}>Total:</span>
