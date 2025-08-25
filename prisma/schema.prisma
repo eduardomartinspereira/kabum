@@ -18,6 +18,7 @@ model User {
   role      Role
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  accessLogs AccessLog[]
 }
 
 model Product {
@@ -26,11 +27,13 @@ model Product {
   description String
   basePrice   Decimal            @db.Decimal(10, 2)
   brand       String?
-  isActive    Boolean       @default(true)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @default(now()) @updatedAt
   images      ProductImage[]
   variations  ProductVariation[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now()) @updatedAt
+  categoryId  Int?
+  category    Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 }
 
 model ProductVariation {
@@ -105,13 +108,65 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
-// Enum para status dos pagamentos
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
 enum PaymentStatus {
-  PENDING     // Pendente
-  APPROVED    // Aprovado
-  REJECTED    // Recusado
-  CANCELLED   // Cancelado
-  IN_PROCESS  // Em processamento
-  REFUNDED    // Reembolsado
-  CHARGED_BACK // Contestado
-} 
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  IN_PROCESS
+  REFUNDED
+  CHARGED_BACK
+}
+
+enum DeviceType {
+  MOBILE
+  DESKTOP
+}
+
+model AccessLog {
+  id          Int        @id @default(autoincrement())
+  userId      Int?
+  ip          String
+  city        String?
+  browser     String      @default("Other")  // evita insert falhar
+  deviceType  DeviceType
+  isIphone    Boolean     @default(false)    // evita insert falhar
+  createdAt   DateTime    @default(now())
+  deviceBrand String?
+  deviceModel String?
+
+  user        User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "AccessLog_userId_fkey")
+}
+
+model Coupon {
+    id              String              @id
+    code            String              @unique
+    discount        Float
+    discountType    Coupon_discountType
+    maxUses         Int                 @default(-1)
+    startAmount     Int                 @default(-1)
+    availableAmount Int                 @default(-1)
+    isActive        Boolean             @default(true)
+    createdAt       DateTime            @default(now())
+    updatedAt       DateTime
+    productId       Int?
+}
+
+enum Coupon_discountType {
+    PERCENTAGE
+    FIXED
+}
+model Category {
+    id          Int       @id @default(autoincrement())
+    name        String
+    description String?
+    createdAt   DateTime  @default(now())
+    products    Product[]
+}
