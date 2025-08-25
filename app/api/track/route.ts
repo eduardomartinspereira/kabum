@@ -11,6 +11,14 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const ua = body.ua || req.headers.get('user-agent') || '';
 
+    // Debug: ver o que está chegando
+    console.log('🔍 Dados recebidos na rota /api/track:', {
+      body,
+      ua,
+      browserFromBody: body.browser,
+      deviceTypeFromBody: body.deviceType
+    });
+
     // Usar dados detectados pelo middleware ou fallback para parseUA
     const browser = body.browser || parseUA(ua).browser;
     const deviceType = body.deviceType || parseUA(ua).deviceType;
@@ -40,6 +48,13 @@ export async function POST(req: Request) {
 
     if (ip) data.ip = ip;
     if (city) data.city = city;
+    
+    // Debug: ver o que está sendo processado
+    console.log('🔍 Processando browser:', {
+      browserOriginal: browser,
+      browserNormalized: browser ? normalizeBrowser(browser) : 'undefined'
+    });
+    
     if (browser) data.browser = normalizeBrowser(browser);
     if (deviceBrand) data.deviceBrand = deviceBrand;
     if (deviceModel) data.deviceModel = deviceModel;

@@ -27,6 +27,9 @@ export function middleware(req: Request) {
     if (ua) {
       const uaLower = ua.toLowerCase();
       
+      // Debug: ver o User-Agent
+      console.log('🔍 Middleware - User-Agent:', ua);
+      
       // Detecção de navegador
       if (uaLower.includes('mobile safari') || uaLower.includes('iphone') || uaLower.includes('ipad')) {
         browser = 'Mobile Safari';
@@ -54,6 +57,9 @@ export function middleware(req: Request) {
       // Detecção de dispositivo
       if (uaLower.includes('mobile')) deviceType = 'MOBILE';
       else if (uaLower.includes('tablet') || uaLower.includes('ipad')) deviceType = 'TABLET';
+      
+      // Debug: ver o que foi detectado
+      console.log('🔍 Middleware - Detectado:', { browser, deviceType });
     }
 
     fetch(`${url.origin}/api/track`, {
