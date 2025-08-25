@@ -20,10 +20,46 @@ export function middleware(req: Request) {
     const city = (req as any).geo?.city || req.headers.get('x-vercel-ip-city') || undefined;
     const ua   = req.headers.get('user-agent') || undefined;
 
+    // Detectar navegador e dispositivo do User-Agent
+    let browser = 'Unknown';
+    let deviceType = 'DESKTOP';
+    
+    if (ua) {
+      const uaLower = ua.toLowerCase();
+      
+      // Detecção de navegador
+      if (uaLower.includes('mobile safari') || uaLower.includes('iphone') || uaLower.includes('ipad')) {
+        browser = 'Mobile Safari';
+        deviceType = 'MOBILE';
+      } else if (uaLower.includes('samsung') || uaLower.includes('samsungbrowser')) {
+        browser = 'Samsung Internet';
+        deviceType = uaLower.includes('mobile') ? 'MOBILE' : 'DESKTOP';
+      } else if (uaLower.includes('chrome') && !uaLower.includes('edg')) {
+        browser = 'Chrome';
+        deviceType = uaLower.includes('mobile') ? 'MOBILE' : 'DESKTOP';
+      } else if (uaLower.includes('firefox') || uaLower.includes('fxios')) {
+        browser = 'Firefox';
+        deviceType = uaLower.includes('mobile') ? 'MOBILE' : 'DESKTOP';
+      } else if (uaLower.includes('safari')) {
+        browser = 'Safari';
+        deviceType = uaLower.includes('mobile') ? 'MOBILE' : 'DESKTOP';
+      } else if (uaLower.includes('edg')) {
+        browser = 'Edge';
+        deviceType = uaLower.includes('mobile') ? 'MOBILE' : 'DESKTOP';
+      } else if (uaLower.includes('opera')) {
+        browser = 'Opera';
+        deviceType = uaLower.includes('mobile') ? 'MOBILE' : 'DESKTOP';
+      }
+      
+      // Detecção de dispositivo
+      if (uaLower.includes('mobile')) deviceType = 'MOBILE';
+      else if (uaLower.includes('tablet') || uaLower.includes('ipad')) deviceType = 'TABLET';
+    }
+
     fetch(`${url.origin}/api/track`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ip, city, ua }),
+      body: JSON.stringify({ ip, city, ua, browser, deviceType }),
       keepalive: true,
     }).catch(() => {});
   } catch {}

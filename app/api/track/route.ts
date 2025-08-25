@@ -11,7 +11,11 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const ua = body.ua || req.headers.get('user-agent') || '';
 
-    const { browser, deviceType, deviceBrand, deviceModel } = parseUA(ua);
+    // Usar dados detectados pelo middleware ou fallback para parseUA
+    const browser = body.browser || parseUA(ua).browser;
+    const deviceType = body.deviceType || parseUA(ua).deviceType;
+    const deviceBrand = body.deviceBrand || parseUA(ua).deviceBrand;
+    const deviceModel = body.deviceModel || parseUA(ua).deviceModel;
 
     // IP e cidade (Vercel injeta geo; fora da Vercel você pode integrar Geo-IP)
     const ip =

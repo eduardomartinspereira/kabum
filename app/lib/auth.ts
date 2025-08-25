@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile, trigger, session }) {
       // Se logou agora (credentials ou google), garanta id/role
       if (user?.email) {
         const dbUser = await prisma.user.findUnique({ where: { email: user.email } });
@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
               userId: String(dbUser.id),
               deviceType: 'DESKTOP', // Tipo de dispositivo
               userAgentRaw: `NextAuth Login - Provider: ${account?.provider || 'credentials'}`,
-              // Não passamos browser aqui, deixamos o sistema detectar automaticamente
+              // O navegador será detectado automaticamente pelo sistema
             });
             console.log('✅ Login registrado com sucesso no AccessLog');
           } catch (error) {

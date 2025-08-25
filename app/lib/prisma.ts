@@ -106,11 +106,27 @@ export async function saveAccessLog(input: AccessLogInput): Promise<void> {
     } else if (input.userAgentRaw) {
       // Tentar extrair navegador do userAgent se disponível
       const ua = input.userAgentRaw.toLowerCase();
-      if (ua.includes('chrome')) data.browser = 'Chrome';
-      else if (ua.includes('firefox')) data.browser = 'Firefox';
-      else if (ua.includes('safari')) data.browser = 'Safari';
-      else if (ua.includes('edge')) data.browser = 'Edge';
-      else data.browser = 'Outros';
+      
+      // Detecção mais precisa de navegadores
+      if (ua.includes('mobile safari') || ua.includes('iphone') || ua.includes('ipad')) {
+        data.browser = 'Mobile Safari';
+      } else if (ua.includes('samsung') || ua.includes('samsungbrowser')) {
+        data.browser = 'Samsung Internet';
+      } else if (ua.includes('chrome') && !ua.includes('edg')) {
+        data.browser = 'Chrome';
+      } else if (ua.includes('firefox') || ua.includes('fxios')) {
+        data.browser = 'Firefox';
+      } else if (ua.includes('safari')) {
+        data.browser = 'Safari';
+      } else if (ua.includes('edg')) {
+        data.browser = 'Edge';
+      } else if (ua.includes('opera')) {
+        data.browser = 'Opera';
+      } else if (ua.includes('ie') || ua.includes('trident')) {
+        data.browser = 'Internet Explorer';
+      } else {
+        data.browser = 'Unknown';
+      }
     }
     
     if (input.deviceBrand) data.deviceBrand = input.deviceBrand;
